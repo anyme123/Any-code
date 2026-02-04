@@ -532,6 +532,37 @@ pub fn is_native_gemini_available() -> bool {
 fn get_native_gemini_paths() -> Vec<String> {
     let mut paths = Vec::new();
 
+    // 检测 npm 配置的自定义 prefix（nvm-windows 全局路径）
+    if let Ok(npm_prefix) = std::env::var("npm_config_prefix") {
+        paths.push(format!(r"{}\gemini.cmd", npm_prefix));
+        paths.push(format!(r"{}\gemini", npm_prefix));
+        paths.push(format!(r"{}\bin\gemini.cmd", npm_prefix));
+        paths.push(format!(r"{}\bin\gemini", npm_prefix));
+        debug!("[Gemini WSL] Checking npm_config_prefix: {}", npm_prefix);
+    }
+
+    // 检测 NVM_HOME 环境变量（nvm-windows 安装目录）
+    if let Ok(nvm_home) = std::env::var("NVM_HOME") {
+        // nvm-windows 的 node_global 目录（自定义全局路径）
+        paths.push(format!(r"{}\node_global\gemini.cmd", nvm_home));
+        paths.push(format!(r"{}\node_global\gemini", nvm_home));
+        debug!("[Gemini WSL] Checking NVM_HOME: {}", nvm_home);
+    }
+
+    // 检测 NVM_SYMLINK 环境变量（当前激活的 Node.js 版本）
+    if let Ok(nvm_symlink) = std::env::var("NVM_SYMLINK") {
+        paths.push(format!(r"{}\gemini.cmd", nvm_symlink));
+        paths.push(format!(r"{}\gemini", nvm_symlink));
+        paths.push(format!(r"{}\node_modules\.bin\gemini.cmd", nvm_symlink));
+        debug!("[Gemini WSL] Checking NVM_SYMLINK: {}", nvm_symlink);
+    }
+
+    // 常见的 nvm-windows 全局路径模式
+    if let Ok(programfiles) = std::env::var("ProgramFiles") {
+        paths.push(format!(r"{}\nvm\node_global\gemini.cmd", programfiles));
+        paths.push(format!(r"{}\nvm\node_global\gemini", programfiles));
+    }
+
     // npm 全局安装路径 (APPDATA - 标准位置)
     if let Ok(appdata) = std::env::var("APPDATA") {
         paths.push(format!(r"{}\npm\gemini.cmd", appdata));
