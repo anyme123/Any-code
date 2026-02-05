@@ -33,8 +33,17 @@ export const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
           "[&::-webkit-scrollbar-track]:bg-transparent",
           "[&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full",
           "[&::-webkit-scrollbar-thumb:hover]:bg-border/80",
+          // 性能优化：启用 GPU 加速和平滑滚动
+          "will-change-scroll",
           className
         )}
+        style={{
+          // 启用硬件加速，减少滚动抖动
+          transform: 'translateZ(0)',
+          WebkitOverflowScrolling: 'touch',
+          // 平滑滚动
+          scrollBehavior: 'smooth',
+        } as React.CSSProperties}
         {...props}
       >
         {children}

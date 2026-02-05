@@ -149,3 +149,52 @@
 .image-move-to-input {
   animation: moveToInput 0.8s ease-in-out forwards;
 }
+
+/* ========================================
+   🎯 COLLAPSIBLE 优化 - 减少抖动
+   ======================================== */
+
+/* Radix UI Collapsible 内容优化 */
+[data-radix-collapsible-content] {
+  /* 启用硬件加速，减少重绘 */
+  will-change: height;
+  transform: translateZ(0);
+
+  /* 优化过渡效果 */
+  transition: height var(--duration-fast) var(--ease-standard);
+
+  /* 防止内容溢出导致的布局抖动 */
+  overflow: hidden;
+}
+
+/* 打开状态 */
+[data-radix-collapsible-content][data-state="open"] {
+  animation: collapsibleSlideDown var(--duration-fast) var(--ease-decelerate);
+}
+
+/* 关闭状态 */
+[data-radix-collapsible-content][data-state="closed"] {
+  animation: collapsibleSlideUp var(--duration-fast) var(--ease-accelerate);
+}
+
+@keyframes collapsibleSlideDown {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsibleSlideUp {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}

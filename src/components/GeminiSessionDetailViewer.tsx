@@ -65,13 +65,37 @@ export const GeminiSessionDetailViewer: React.FC<GeminiSessionDetailViewerProps>
     let shouldStick = true;
     let scrollCount = 0;
     const MAX_SCROLL_ATTEMPTS = 3; // 限制滚动次数，避免过度滚动
+    let userIsScrolling = false; // 检测用户是否正在滚动
+    let scrollTimeout: number | null = null;
 
     const scrollToBottom = () => {
+      // 如果用户正在滚动，不要干扰
+      if (userIsScrolling) return;
+
       if (shouldStick && el && scrollCount < MAX_SCROLL_ATTEMPTS) {
         el.scrollTop = el.scrollHeight;
         scrollCount++;
       }
     };
+
+    // 监听用户滚动事件，避免自动滚动干扰用户操作
+    const handleUserScroll = () => {
+      userIsScrolling = true;
+      shouldStick = false; // 用户开始滚动后，立即停止自动滚动
+
+      // 清除之前的定时器
+      if (scrollTimeout !== null) {
+        clearTimeout(scrollTimeout);
+      }
+
+      // 300ms 后重置滚动状态
+      scrollTimeout = window.setTimeout(() => {
+        userIsScrolling = false;
+      }, 300);
+    };
+
+    // 添加滚动事件监听
+    el.addEventListener('scroll', handleUserScroll, { passive: true });
 
     // 立即尝试滚动
     scrollToBottom();
@@ -94,7 +118,7 @@ export const GeminiSessionDetailViewer: React.FC<GeminiSessionDetailViewerProps>
       observer.observe(el);
     }
 
-    // 300ms后停止强制滚动，允许用户自由滚动（从1000ms减少到300ms）
+    // 200ms后停止强制滚动，允许用户自由滚动（从300ms减少到200ms）
     const timer = setTimeout(() => {
       shouldStick = false;
       observer.disconnect();
@@ -102,15 +126,20 @@ export const GeminiSessionDetailViewer: React.FC<GeminiSessionDetailViewerProps>
       if (resizeTimer !== null) {
         cancelAnimationFrame(resizeTimer);
       }
-    }, 300);
+    }, 200);
 
     return () => {
       shouldStick = false;
+      userIsScrolling = false;
       observer.disconnect();
       clearTimeout(timer);
       if (resizeTimer !== null) {
         cancelAnimationFrame(resizeTimer);
       }
+      if (scrollTimeout !== null) {
+        clearTimeout(scrollTimeout);
+      }
+      el.removeEventListener('scroll', handleUserScroll);
     };
   }, [session?.sessionId, sessionId]);
 
