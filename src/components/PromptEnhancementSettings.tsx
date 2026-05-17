@@ -345,7 +345,7 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
                 <Input
                   value={editingProvider.model}
                   onChange={(e) => setEditingProvider({ ...editingProvider, model: e.target.value })}
-                  placeholder="gpt-4o"
+                  placeholder="gpt-5.5"
                 />
               </div>
 

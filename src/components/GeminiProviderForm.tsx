@@ -59,7 +59,7 @@ export default function GeminiProviderForm({
   // Gemini 特有字段
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
-  const [modelName, setModelName] = useState('gemini-3-pro-preview');
+  const [modelName, setModelName] = useState('auto-gemini-3');
 
   // 状态
   const [loading, setLoading] = useState(false);
@@ -73,7 +73,7 @@ export default function GeminiProviderForm({
     if (initialData) {
       setApiKey(extractApiKeyFromEnv(initialData.env));
       setBaseUrl(extractBaseUrlFromEnv(initialData.env));
-      setModelName(extractModelFromEnv(initialData.env) || 'gemini-3-pro-preview');
+      setModelName(extractModelFromEnv(initialData.env) || 'auto-gemini-3');
     }
   }, [initialData]);
 
@@ -88,7 +88,7 @@ export default function GeminiProviderForm({
       setCategory(preset.category || 'custom');
       setApiKey(''); // 清空 API Key，用户需要填写
       setBaseUrl(extractBaseUrlFromEnv(preset.env));
-      setModelName(extractModelFromEnv(preset.env) || 'gemini-3-pro-preview');
+      setModelName(extractModelFromEnv(preset.env) || 'auto-gemini-3');
     }
   }, []);
 
@@ -324,7 +324,7 @@ export default function GeminiProviderForm({
                 id="modelName"
                 value={modelName}
                 onChange={(e) => setModelName(e.target.value)}
-                placeholder="gemini-3-pro-preview"
+                placeholder="auto-gemini-3"
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">

@@ -64,7 +64,7 @@ export default function CodexProviderForm({
   // Codex 特有字段
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
-  const [modelName, setModelName] = useState('gpt-5-codex');
+  const [modelName, setModelName] = useState('gpt-5.5');
 
   // 原始配置（用于高级编辑）
   const [authJson, setAuthJson] = useState('{}');
@@ -83,7 +83,7 @@ export default function CodexProviderForm({
     if (initialData) {
       setApiKey(extractApiKeyFromAuth(initialData.auth));
       setBaseUrl(extractBaseUrlFromConfig(initialData.config));
-      setModelName(extractModelFromConfig(initialData.config) || 'gpt-5-codex');
+      setModelName(extractModelFromConfig(initialData.config) || 'gpt-5.5');
       setAuthJson(JSON.stringify(initialData.auth, null, 2));
       setConfigToml(initialData.config);
     }
@@ -100,7 +100,7 @@ export default function CodexProviderForm({
       setCategory(preset.category || 'custom');
       setApiKey(''); // 清空 API Key，用户需要填写
       setBaseUrl(extractBaseUrlFromConfig(preset.config));
-      setModelName(extractModelFromConfig(preset.config) || 'gpt-5-codex');
+      setModelName(extractModelFromConfig(preset.config) || 'gpt-5.5');
       setAuthJson(JSON.stringify(preset.auth, null, 2));
       setConfigToml(preset.config);
     }
@@ -377,7 +377,7 @@ export default function CodexProviderForm({
                 id="modelName"
                 value={modelName}
                 onChange={(e) => handleModelChange(e.target.value)}
-                placeholder="gpt-5-codex"
+                placeholder="gpt-5.5"
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
@@ -431,7 +431,7 @@ export default function CodexProviderForm({
                   id="configToml"
                   value={configToml}
                   onChange={(e) => setConfigToml(e.target.value)}
-                  placeholder='model_provider = "custom"&#10;model = "gpt-5-codex"'
+                  placeholder='model_provider = "custom"&#10;model = "gpt-5.5"&#10;model_reasoning_effort = "high"'
                   className="font-mono text-xs h-48"
                   disabled={loading}
                 />

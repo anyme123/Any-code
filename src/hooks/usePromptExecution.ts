@@ -74,8 +74,9 @@ interface UsePromptExecutionConfig {
   // 🆕 Execution Engine Integration (Claude/Codex/Gemini)
   executionEngine?: 'claude' | 'codex' | 'gemini'; // 执行引擎选择 (默认: 'claude')
   codexMode?: CodexExecutionMode;       // Codex 执行模式
-  codexModel?: string;                  // Codex 模型 (e.g., 'gpt-5.2')
-  geminiModel?: string;                 // Gemini 模型 (e.g., 'gemini-3-flash')
+  codexModel?: string;                  // Codex 模型 (e.g., 'gpt-5.5')
+  codexReasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+  geminiModel?: string;                 // Gemini 模型 (e.g., 'auto-gemini-3')
   geminiApprovalMode?: 'auto_edit' | 'yolo' | 'default'; // Gemini 审批模式
 
   // Refs
@@ -132,6 +133,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
     executionEngine = 'claude', // 🆕 默认使用 Claude Code
     codexMode = 'read-only',     // 🆕 Codex 默认只读模式
     codexModel,                  // 🆕 Codex 模型
+    codexReasoningLevel,         // 🆕 Codex 推理强度
     geminiModel,                 // 🆕 Gemini 模型
     geminiApprovalMode,          // 🆕 Gemini 审批模式
     hasActiveSessionRef,
@@ -1558,6 +1560,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
               prompt: processedPrompt,
               mode: codexMode || 'read-only',
               model: codexModel || model,
+              reasoningEffort: codexReasoningLevel,
               json: true
             });
           } catch (resumeError) {
@@ -1567,6 +1570,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
               prompt: processedPrompt,
               mode: codexMode || 'read-only',
               model: codexModel || model,
+              reasoningEffort: codexReasoningLevel,
               json: true
             });
           }
@@ -1578,6 +1582,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
             prompt: processedPrompt,
             mode: codexMode || 'read-only',
             model: codexModel || model,
+            reasoningEffort: codexReasoningLevel,
             json: true
           });
         }
@@ -1615,7 +1620,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
         await api.executeGemini({
           projectPath,
           prompt: processedPrompt,
-          model: geminiModel || 'gemini-3-flash',
+          model: geminiModel || 'auto-gemini-3',
           approvalMode: geminiApprovalMode || 'auto_edit',
           sessionId: sessionId,  // 🔑 Pass session ID for resumption
           debug: false
@@ -1682,6 +1687,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
     executionEngine,  // 🆕 Codex/Gemini integration
     codexMode,        // 🆕 Codex integration
     codexModel,       // 🆕 Codex integration
+    codexReasoningLevel, // 🆕 Codex integration
     geminiModel,      // 🆕 Gemini integration
     geminiApprovalMode, // 🆕 Gemini integration
     hasActiveSessionRef,

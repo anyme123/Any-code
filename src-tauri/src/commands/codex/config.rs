@@ -906,7 +906,8 @@ fn do_get_codex_mode_config() -> CodexModeInfo {
     };
 
     #[cfg(not(target_os = "windows"))]
-    let (native_available, wsl_available, available_distros, is_windows) = (true, false, vec![], false);
+    let (native_available, wsl_available, available_distros, is_windows) =
+        (true, false, vec![], false);
 
     let mode_str = match config.mode {
         wsl_utils::CodexMode::Auto => "auto",
@@ -926,7 +927,6 @@ fn do_get_codex_mode_config() -> CodexModeInfo {
         is_windows,
     }
 }
-
 
 /// Set Codex mode configuration
 #[tauri::command]
@@ -991,7 +991,10 @@ fn get_codex_config_dir() -> Result<PathBuf, String> {
     // Fall back to native Windows path
     let home_dir = dirs::home_dir().ok_or_else(|| "Cannot get home directory".to_string())?;
     let native_dir = home_dir.join(".codex");
-    log::debug!("[Codex Provider] Using native config directory: {:?}", native_dir);
+    log::debug!(
+        "[Codex Provider] Using native config directory: {:?}",
+        native_dir
+    );
     Ok(native_dir)
 }
 
@@ -1074,7 +1077,10 @@ pub async fn get_codex_provider_presets() -> Result<Vec<CodexProviderConfig>, St
 #[tauri::command]
 pub async fn get_current_codex_config() -> Result<CurrentCodexConfig, String> {
     let is_wsl_mode = should_use_wsl_config();
-    log::info!("[Codex Provider] Getting current config (WSL mode: {})", is_wsl_mode);
+    log::info!(
+        "[Codex Provider] Getting current config (WSL mode: {})",
+        is_wsl_mode
+    );
 
     let auth_path = get_codex_auth_path()?;
     let config_path = get_codex_config_path()?;
@@ -1133,9 +1139,16 @@ pub async fn switch_codex_provider(config: CodexProviderConfig) -> Result<String
 
     // Ensure config directory exists
     if !config_dir.exists() {
-        log::info!("[Codex Provider] Creating config directory: {:?}", config_dir);
-        fs::create_dir_all(&config_dir)
-            .map_err(|e| format!("Failed to create .codex directory at {:?}: {}", config_dir, e))?;
+        log::info!(
+            "[Codex Provider] Creating config directory: {:?}",
+            config_dir
+        );
+        fs::create_dir_all(&config_dir).map_err(|e| {
+            format!(
+                "Failed to create .codex directory at {:?}: {}",
+                config_dir, e
+            )
+        })?;
     }
 
     // Validate new TOML if not empty
@@ -1209,7 +1222,16 @@ pub async fn switch_codex_provider(config: CodexProviderConfig) -> Result<String
 
         if let Ok(mut existing_table) = toml::from_str::<toml::Table>(&existing_content) {
             // Provider-specific keys that will be overwritten
-            let provider_keys = ["model_provider", "model", "model_providers", "model_reasoning_effort"];
+            let provider_keys = [
+                "model_provider",
+                "model",
+                "model_providers",
+                "model_reasoning_effort",
+                "plan_mode_reasoning_effort",
+                "model_verbosity",
+                "service_tier",
+                "model_catalog_json",
+            ];
 
             if let Some(new_table) = new_config_table {
                 // Remove provider-specific keys from existing config
@@ -1252,8 +1274,7 @@ pub async fn switch_codex_provider(config: CodexProviderConfig) -> Result<String
     let mode_info = if is_wsl_mode { " (WSL)" } else { "" };
     Ok(format!(
         "Successfully switched to Codex provider: {}{}",
-        config.name,
-        mode_info
+        config.name, mode_info
     ))
 }
 
@@ -1489,10 +1510,10 @@ pub async fn update_codex_reasoning_level(level: String) -> Result<String, Strin
 
     // Validate level
     // Note: 'xhigh' is used in config.toml for extra high reasoning level
-    let valid_levels = ["low", "medium", "high", "xhigh"];
+    let valid_levels = ["minimal", "low", "medium", "high", "xhigh"];
     if !valid_levels.contains(&level.as_str()) {
         return Err(format!(
-            "Invalid reasoning level: {}. Valid values are: low, medium, high, xhigh",
+            "Invalid reasoning level: {}. Valid values are: minimal, low, medium, high, xhigh",
             level
         ));
     }
@@ -1509,8 +1530,12 @@ pub async fn update_codex_reasoning_level(level: String) -> Result<String, Strin
     // Ensure config directory exists
     if !config_dir.exists() {
         log::info!("[Codex] Creating config directory: {:?}", config_dir);
-        fs::create_dir_all(&config_dir)
-            .map_err(|e| format!("Failed to create .codex directory at {:?}: {}", config_dir, e))?;
+        fs::create_dir_all(&config_dir).map_err(|e| {
+            format!(
+                "Failed to create .codex directory at {:?}: {}",
+                config_dir, e
+            )
+        })?;
     }
 
     // Read existing config or create new one
@@ -1539,8 +1564,7 @@ pub async fn update_codex_reasoning_level(level: String) -> Result<String, Strin
     let mode_info = if is_wsl_mode { " (WSL)" } else { "" };
     Ok(format!(
         "Successfully updated reasoning level to: {}{}",
-        level,
-        mode_info
+        level, mode_info
     ))
 }
 
@@ -1574,8 +1598,7 @@ pub async fn get_codex_multi_agent_config() -> Result<CodexMultiAgentConfig, Str
 
     let content = fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read config.toml: {}", e))?;
-    let config_table: toml::Table = toml::from_str(&content)
-        .unwrap_or_else(|_| toml::Table::new());
+    let config_table: toml::Table = toml::from_str(&content).unwrap_or_else(|_| toml::Table::new());
 
     let enabled = config_table
         .get("features")
@@ -1608,7 +1631,10 @@ pub async fn get_codex_multi_agent_config() -> Result<CodexMultiAgentConfig, Str
 /// Set Codex multi-agent configuration in config.toml [features] section
 #[tauri::command]
 pub async fn set_codex_multi_agent_config(config: CodexMultiAgentConfig) -> Result<String, String> {
-    log::info!("[Codex] Setting multi-agent config: enabled={}", config.enabled);
+    log::info!(
+        "[Codex] Setting multi-agent config: enabled={}",
+        config.enabled
+    );
 
     let config_dir = get_codex_config_dir()?;
     let config_path = get_codex_config_path()?;
@@ -1667,6 +1693,10 @@ pub async fn set_codex_multi_agent_config(config: CodexMultiAgentConfig) -> Resu
     log::info!("[Codex] Multi-agent config updated successfully");
     Ok(format!(
         "Multi-agent {} successfully",
-        if config.enabled { "enabled" } else { "disabled" }
+        if config.enabled {
+            "enabled"
+        } else {
+            "disabled"
+        }
     ))
 }

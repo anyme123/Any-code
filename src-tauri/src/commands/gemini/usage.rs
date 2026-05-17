@@ -95,9 +95,41 @@ struct ModelPricing {
 fn get_gemini_pricing(model: &str) -> ModelPricing {
     let normalized = model.to_lowercase();
 
-    // Gemini 3.1 Pro Preview (Latest - February 2026)
-    if normalized.contains("gemini-3.1-pro") || normalized.contains("gemini_3_1_pro")
-        || normalized.contains("3.1-pro") {
+    // Gemini CLI Auto/Pro alias maps to Gemini 3 Pro Preview for conservative estimates.
+    if normalized.contains("auto-gemini-3") || normalized == "auto" || normalized == "pro" {
+        return ModelPricing {
+            input: 2.00,
+            output: 12.00,
+            cache_read: 0.20,
+        };
+    }
+
+    // Gemini CLI Flash-Lite alias
+    if normalized == "flash-lite" {
+        return ModelPricing {
+            input: 0.10,
+            output: 0.40,
+            cache_read: 0.01,
+        };
+    }
+
+    // Gemini CLI Flash alias / Gemini 3 Flash Preview
+    if normalized == "flash"
+        || normalized.contains("gemini-3-flash")
+        || normalized.contains("gemini_3_flash")
+    {
+        return ModelPricing {
+            input: 0.50,
+            output: 3.00,
+            cache_read: 0.05,
+        };
+    }
+
+    // Gemini 3.1 Pro Preview
+    if normalized.contains("gemini-3.1-pro")
+        || normalized.contains("gemini_3_1_pro")
+        || normalized.contains("3.1-pro")
+    {
         return ModelPricing {
             input: 2.50,
             output: 15.00,
@@ -150,20 +182,11 @@ fn get_gemini_pricing(model: &str) -> ModelPricing {
         };
     }
 
-    // Gemini 3 Flash (default for new sessions)
-    if normalized.contains("gemini-3-flash") || normalized.contains("gemini_3_flash") {
-        return ModelPricing {
-            input: 0.30,
-            output: 2.50,
-            cache_read: 0.03,
-        };
-    }
-
-    // Default to Gemini 2.5 Pro pricing
+    // Default to Gemini 3 Pro Preview pricing
     ModelPricing {
-        input: 1.25,
-        output: 10.00,
-        cache_read: 0.125,
+        input: 2.00,
+        output: 12.00,
+        cache_read: 0.20,
     }
 }
 
@@ -187,16 +210,13 @@ fn read_session_detail_from_path(path: &PathBuf) -> Result<GeminiSessionDetail, 
     serde_json::from_str(&content).map_err(|e| format!("Failed to parse session file: {}", e))
 }
 
-fn parse_session_for_usage(
-    path: &PathBuf,
-    project_hash: &str,
-) -> Option<GeminiSessionUsage> {
+fn parse_session_for_usage(path: &PathBuf, project_hash: &str) -> Option<GeminiSessionUsage> {
     let detail = read_session_detail_from_path(path).ok()?;
 
     // Extract token usage from messages
     let mut total_input_tokens: u64 = 0;
     let mut total_output_tokens: u64 = 0;
-    let mut model = "gemini-3-flash".to_string();
+    let mut model = "auto-gemini-3".to_string();
     let mut first_message: Option<String> = None;
 
     for message in &detail.messages {
@@ -285,7 +305,8 @@ fn collect_all_sessions() -> Vec<GeminiSessionUsage> {
                 for chat_entry in chat_entries.flatten() {
                     let chat_path = chat_entry.path();
                     if chat_path.extension().and_then(|s| s.to_str()) == Some("json") {
-                        if let Some(mut session) = parse_session_for_usage(&chat_path, &project_hash)
+                        if let Some(mut session) =
+                            parse_session_for_usage(&chat_path, &project_hash)
                         {
                             // Try to find project path from session data
                             // For now, use the hash as identifier
@@ -322,29 +343,28 @@ pub async fn get_gemini_usage_stats(
     let all_sessions = collect_all_sessions();
 
     // Filter by date range if provided
-    let filtered_sessions: Vec<GeminiSessionUsage> = if let (Some(start), Some(end)) =
-        (&start_date, &end_date)
-    {
-        let start_naive = NaiveDate::parse_from_str(start, "%Y-%m-%d")
-            .map_err(|e| format!("Invalid start date: {}", e))?;
-        let end_naive = NaiveDate::parse_from_str(end, "%Y-%m-%d")
-            .map_err(|e| format!("Invalid end date: {}", e))?;
+    let filtered_sessions: Vec<GeminiSessionUsage> =
+        if let (Some(start), Some(end)) = (&start_date, &end_date) {
+            let start_naive = NaiveDate::parse_from_str(start, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid start date: {}", e))?;
+            let end_naive = NaiveDate::parse_from_str(end, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid end date: {}", e))?;
 
-        all_sessions
-            .into_iter()
-            .filter(|s| {
-                // Parse start_time (ISO 8601 format)
-                if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&s.start_time) {
-                    let date = dt.date_naive();
-                    date >= start_naive && date <= end_naive
-                } else {
-                    false
-                }
-            })
-            .collect()
-    } else {
-        all_sessions
-    };
+            all_sessions
+                .into_iter()
+                .filter(|s| {
+                    // Parse start_time (ISO 8601 format)
+                    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&s.start_time) {
+                        let date = dt.date_naive();
+                        date >= start_naive && date <= end_naive
+                    } else {
+                        false
+                    }
+                })
+                .collect()
+        } else {
+            all_sessions
+        };
 
     // Aggregate statistics
     let mut total_cost = 0.0;
@@ -383,7 +403,12 @@ pub async fn get_gemini_usage_stats(
         let date = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&session.start_time) {
             dt.format("%Y-%m-%d").to_string()
         } else {
-            session.start_time.split('T').next().unwrap_or("unknown").to_string()
+            session
+                .start_time
+                .split('T')
+                .next()
+                .unwrap_or("unknown")
+                .to_string()
         };
 
         let daily_stat = daily_stats.entry(date.clone()).or_insert(GeminiDailyUsage {
@@ -410,16 +435,17 @@ pub async fn get_gemini_usage_stats(
                 .to_string()
         };
 
-        let project_stat = project_stats
-            .entry(session.project_hash.clone())
-            .or_insert(GeminiProjectUsage {
-                project_path: session.project_path.clone(),
-                project_name,
-                total_cost: 0.0,
-                total_tokens: 0,
-                session_count: 0,
-                last_used: session.start_time.clone(),
-            });
+        let project_stat =
+            project_stats
+                .entry(session.project_hash.clone())
+                .or_insert(GeminiProjectUsage {
+                    project_path: session.project_path.clone(),
+                    project_name,
+                    total_cost: 0.0,
+                    total_tokens: 0,
+                    session_count: 0,
+                    last_used: session.start_time.clone(),
+                });
         project_stat.total_cost += session.total_cost;
         project_stat.total_tokens += session.input_tokens + session.output_tokens;
         project_stat.session_count += 1;

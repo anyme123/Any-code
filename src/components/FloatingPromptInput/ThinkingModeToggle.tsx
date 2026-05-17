@@ -17,6 +17,7 @@ const EFFORT_COLORS: Record<ThinkingEffort, string> = {
   low: "bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-blue-500/20",
   medium: "bg-amber-600 hover:bg-amber-700 border-amber-600 shadow-amber-500/20",
   high: "bg-orange-600 hover:bg-orange-700 border-orange-600 shadow-orange-500/20",
+  xhigh: "bg-fuchsia-600 hover:bg-fuchsia-700 border-fuchsia-600 shadow-fuchsia-500/20",
   max: "bg-red-600 hover:bg-red-700 border-red-600 shadow-red-500/20",
 };
 
@@ -24,12 +25,13 @@ const EFFORT_LABELS: Record<ThinkingEffort, string> = {
   low: "Low",
   medium: "Med",
   high: "High",
+  xhigh: "XHigh",
   max: "Max",
 };
 
 /**
- * ThinkingModeToggle - Adaptive Thinking with effort levels (Claude 4.6)
- * Click to cycle: off → high → max → low → medium → off
+ * ThinkingModeToggle - Adaptive Thinking with effort levels
+ * Click to cycle: off → high → xhigh → max → low → medium → off
  */
 export const ThinkingModeToggle: React.FC<ThinkingModeToggleProps> = ({
   isEnabled,

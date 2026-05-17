@@ -45,7 +45,7 @@ export function parseModelDisplayName(modelId: string): string | null {
 
   // Pattern: claude-{family}-{major}[-{minor}[...]]-{date}
   // The date is always 8 digits at the end
-  const match = modelId.match(/^claude-(\w+)-([\d]+(?:-[\d]+)*)-\d{8}/);
+  const match = modelId.match(/^claude-(\w+)-([\d]+(?:-[\d]+)*)(?:-\d{8})?$/);
   if (!match) return null;
 
   const family = match[1]; // "sonnet", "opus", "haiku"
@@ -225,8 +225,8 @@ export function formatCodexModelName(modelId: string): string {
 
 /**
  * Get all cached Gemini model display names from localStorage.
- * Keys are model IDs (e.g., "gemini-3-flash").
- * Values are display names (e.g., "Gemini 3 Flash").
+ * Keys are model IDs (e.g., "gemini-3-flash-preview").
+ * Values are display names (e.g., "Gemini 3 Flash Preview").
  */
 export function getCachedGeminiModelNames(): Record<string, string> {
   try {
@@ -247,7 +247,7 @@ export function getCachedGeminiModelNames(): Record<string, string> {
  * Cache a Gemini model display name.
  * Dispatches a custom event to notify listening components.
  *
- * @param modelId - The model ID (e.g., "gemini-3-flash")
+ * @param modelId - The model ID (e.g., "gemini-3-flash-preview")
  * @param displayName - Human-readable display name (e.g., "Gemini 3 Flash")
  */
 export function cacheGeminiModelName(modelId: string, displayName: string): void {
@@ -271,7 +271,7 @@ export function cacheGeminiModelName(modelId: string, displayName: string): void
 /**
  * Process a Gemini stream message's model field and cache it.
  *
- * @param modelId - The model ID from the Gemini stream (e.g., "gemini-3-flash")
+ * @param modelId - The model ID from the Gemini stream (e.g., "gemini-3-flash-preview")
  */
 export function cacheGeminiModelFromStream(modelId: string): void {
   if (!modelId || typeof modelId !== 'string') return;
@@ -284,10 +284,9 @@ export function cacheGeminiModelFromStream(modelId: string): void {
  * Format a Gemini model ID into a human-readable display name.
  *
  * @example
- * formatGeminiModelName("gemini-3-flash")            // "Gemini 3 Flash"
- * formatGeminiModelName("gemini-3-pro")              // "Gemini 3 Pro"
- * formatGeminiModelName("gemini-3-flash-thinking")   // "Gemini 3 Flash Thinking"
+ * formatGeminiModelName("gemini-3-flash-preview")    // "Gemini 3 Flash Preview"
  * formatGeminiModelName("gemini-3-pro-preview")      // "Gemini 3 Pro Preview"
+ * formatGeminiModelName("auto-gemini-3")             // "Auto Gemini 3"
  */
 export function formatGeminiModelName(modelId: string): string {
   if (!modelId) return modelId;

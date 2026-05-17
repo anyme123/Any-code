@@ -9,8 +9,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::process::Stdio;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
@@ -61,8 +61,11 @@ pub struct CodexExecutionOptions {
     #[serde(default)]
     pub mode: CodexExecutionMode,
 
-    /// Model to use (e.g., "gpt-5.1-codex-max")
+    /// Model to use (e.g., "gpt-5.5")
     pub model: Option<String>,
+
+    /// Reasoning effort for this run (minimal, low, medium, high, xhigh)
+    pub reasoning_effort: Option<String>,
 
     /// Enable JSON output mode
     #[serde(default = "default_json_mode")]
@@ -179,7 +182,14 @@ pub async fn execute_codex(
 
     // Execute and stream output
     let session_id = format!("codex-{}", uuid::Uuid::new_v4());
-    execute_codex_process(session_id, cmd, prompt, options.project_path.clone(), app_handle).await
+    execute_codex_process(
+        session_id,
+        cmd,
+        prompt,
+        options.project_path.clone(),
+        app_handle,
+    )
+    .await
 }
 
 /// Resumes a previous Codex session
@@ -219,7 +229,14 @@ pub async fn resume_last_codex(
 
     // Execute and stream output
     let session_id = format!("codex-{}", uuid::Uuid::new_v4());
-    execute_codex_process(session_id, cmd, prompt, options.project_path.clone(), app_handle).await
+    execute_codex_process(
+        session_id,
+        cmd,
+        prompt,
+        options.project_path.clone(),
+        app_handle,
+    )
+    .await
 }
 
 /// Cancels a running Codex execution
@@ -236,7 +253,11 @@ pub async fn cancel_codex(session_id: Option<String>, app_handle: AppHandle) -> 
         // Cancel specific session
         if let Some(handle) = processes.remove(&sid) {
             let pid = handle.pid;
-            log::info!("Killing Codex process tree for session: {} (PID: {})", sid, pid);
+            log::info!(
+                "Killing Codex process tree for session: {} (PID: {})",
+                sid,
+                pid
+            );
 
             // Kill the entire process tree (parent + all children)
             if let Err(e) = kill_process_tree(pid) {
@@ -247,7 +268,10 @@ pub async fn cancel_codex(session_id: Option<String>, app_handle: AppHandle) -> 
                     log::error!("Fallback kill also failed: {}", e2);
                 }
             } else {
-                log::info!("Successfully killed Codex process tree for session: {}", sid);
+                log::info!(
+                    "Successfully killed Codex process tree for session: {}",
+                    sid
+                );
             }
         } else {
             log::warn!("No running process found for session: {}", sid);
@@ -256,7 +280,11 @@ pub async fn cancel_codex(session_id: Option<String>, app_handle: AppHandle) -> 
         // Cancel all processes
         for (sid, handle) in processes.drain() {
             let pid = handle.pid;
-            log::info!("Killing Codex process tree for session: {} (PID: {})", sid, pid);
+            log::info!(
+                "Killing Codex process tree for session: {} (PID: {})",
+                sid,
+                pid
+            );
 
             if let Err(e) = kill_process_tree(pid) {
                 log::error!("Failed to kill process tree for session {}: {}", sid, e);
@@ -265,7 +293,10 @@ pub async fn cancel_codex(session_id: Option<String>, app_handle: AppHandle) -> 
                     log::error!("Fallback kill also failed: {}", e2);
                 }
             } else {
-                log::info!("Successfully killed Codex process tree for session: {}", sid);
+                log::info!(
+                    "Successfully killed Codex process tree for session: {}",
+                    sid
+                );
             }
         }
     }
@@ -671,6 +702,11 @@ fn build_codex_command(
             cmd.arg(model);
         }
 
+        if let Some(ref effort) = options.reasoning_effort {
+            cmd.arg("--config");
+            cmd.arg(format!("model_reasoning_effort=\"{}\"", effort));
+        }
+
         if let Some(ref schema) = options.output_schema {
             cmd.arg("--output-schema");
             cmd.arg(schema);
@@ -753,6 +789,11 @@ fn build_wsl_codex_command(
             args.push(model.clone());
         }
 
+        if let Some(ref effort) = options.reasoning_effort {
+            args.push("--config".to_string());
+            args.push(format!("model_reasoning_effort=\"{}\"", effort));
+        }
+
         if let Some(ref schema) = options.output_schema {
             args.push("--output-schema".to_string());
             args.push(schema.clone());
@@ -777,17 +818,12 @@ fn build_wsl_codex_command(
 
     // Build WSL command with path conversion
     // project_path is Windows format (C:\...), will be converted to WSL format (/mnt/c/...)
-    let codex_program = wsl_config
-        .codex_path_in_wsl
-        .as_deref()
-        .unwrap_or("codex");
+    let codex_program = wsl_config.codex_path_in_wsl.as_deref().unwrap_or("codex");
 
     // 若 Codex 位于版本管理器目录（例如 /root/.nvm/.../bin/codex），则非交互 wsl -- 不会加载 NVM 环境，
     // 需要显式注入 PATH，确保脚本内部能找到 node。
     let (program_for_wsl, args_for_wsl) = if codex_program.starts_with('/') {
-        if let Some(path_env) =
-            wsl_utils::build_wsl_path_for_program(codex_program)
-        {
+        if let Some(path_env) = wsl_utils::build_wsl_path_for_program(codex_program) {
             let mut wrapped: Vec<String> = Vec::with_capacity(args.len() + 2);
             wrapped.push(format!("PATH={}", path_env));
             wrapped.push(codex_program.to_string());
@@ -858,7 +894,12 @@ async fn execute_codex_process(
     let mut child = match cmd.spawn() {
         Ok(child) => child,
         Err(e) => {
-            emit_codex_error(&app_handle, &session_id, "启动 Codex 失败", Some(&e.to_string()));
+            emit_codex_error(
+                &app_handle,
+                &session_id,
+                "启动 Codex 失败",
+                Some(&e.to_string()),
+            );
             // 这里不返回错误给前端（避免覆盖错误事件的可诊断信息），统一走事件通道
             return Ok(());
         }
@@ -943,7 +984,12 @@ async fn execute_codex_process(
     let stdout = match child.stdout.take() {
         Some(stdout) => stdout,
         None => {
-            emit_codex_error(&app_handle, &session_id, "启动 Codex 失败：无法捕获 stdout", None);
+            emit_codex_error(
+                &app_handle,
+                &session_id,
+                "启动 Codex 失败：无法捕获 stdout",
+                None,
+            );
             let _ = child.kill().await;
             return Ok(());
         }
@@ -951,7 +997,12 @@ async fn execute_codex_process(
     let stderr = match child.stderr.take() {
         Some(stderr) => stderr,
         None => {
-            emit_codex_error(&app_handle, &session_id, "启动 Codex 失败：无法捕获 stderr", None);
+            emit_codex_error(
+                &app_handle,
+                &session_id,
+                "启动 Codex 失败：无法捕获 stderr",
+                None,
+            );
             let _ = child.kill().await;
             return Ok(());
         }
@@ -1072,7 +1123,10 @@ async fn execute_codex_process(
 
         // Only wait for stdout to close (stderr can continue logging)
         let _ = done_rx.await;
-        log::info!("[Codex] Completion signaled for session: {}", session_id_complete);
+        log::info!(
+            "[Codex] Completion signaled for session: {}",
+            session_id_complete
+        );
 
         // 若 stdout 完全无输出但 stderr 有内容，补发一次可诊断错误事件，避免前端表现为“无反应”
         if !saw_stdout_for_complete.load(Ordering::Relaxed) {

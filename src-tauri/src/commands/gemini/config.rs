@@ -64,7 +64,7 @@ pub struct GeminiConfig {
 }
 
 fn default_model() -> String {
-    "gemini-3-flash".to_string()
+    "auto-gemini-3".to_string()
 }
 
 fn default_approval_mode() -> String {
@@ -151,43 +151,85 @@ pub async fn update_gemini_config(config: GeminiConfig) -> Result<(), String> {
     save_gemini_config(&config)
 }
 
-/// Get available Gemini models (Gemini 3.1 / 3 series)
-/// Updated: February 2026
+/// Get available Gemini models and CLI aliases.
+/// Updated: May 2026
 #[tauri::command]
 pub async fn get_gemini_models() -> Result<Vec<GeminiModelInfo>, String> {
     Ok(vec![
         GeminiModelInfo {
-            id: "gemini-3.1-pro-preview".to_string(),
-            name: "Gemini 3.1 Pro (Preview)".to_string(),
-            description: "Latest flagship model with 2M context (February 2026)".to_string(),
-            context_window: 2_000_000,
-            is_default: false,
-        },
-        GeminiModelInfo {
-            id: "gemini-3-flash".to_string(),
-            name: "Gemini 3 Flash".to_string(),
-            description: "Fastest model for everyday coding".to_string(),
+            id: "auto-gemini-3".to_string(),
+            name: "Auto (Gemini 3)".to_string(),
+            description: "Recommended auto routing between Gemini 3 Pro/Flash Preview".to_string(),
             context_window: 1_000_000,
             is_default: true,
         },
         GeminiModelInfo {
-            id: "gemini-3-pro".to_string(),
-            name: "Gemini 3 Pro".to_string(),
-            description: "Strong reasoning and coding capabilities".to_string(),
+            id: "pro".to_string(),
+            name: "Pro".to_string(),
+            description: "Gemini CLI Pro alias for complex reasoning".to_string(),
             context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "flash".to_string(),
+            name: "Flash".to_string(),
+            description: "Gemini CLI Flash alias for fast everyday coding".to_string(),
+            context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "flash-lite".to_string(),
+            name: "Flash-Lite".to_string(),
+            description: "Gemini CLI Flash-Lite alias for lightweight tasks".to_string(),
+            context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "gemini-3.1-pro-preview".to_string(),
+            name: "Gemini 3.1 Pro (Preview)".to_string(),
+            description: "Flagship preview model rolling out gradually".to_string(),
+            context_window: 2_000_000,
             is_default: false,
         },
         GeminiModelInfo {
             id: "gemini-3-pro-preview".to_string(),
             name: "Gemini 3 Pro (Preview)".to_string(),
-            description: "Experimental preview version".to_string(),
+            description: "Gemini 3 Pro preview for complex reasoning".to_string(),
             context_window: 1_000_000,
             is_default: false,
         },
         GeminiModelInfo {
-            id: "gemini-3-flash-thinking".to_string(),
-            name: "Gemini 3 Flash Thinking".to_string(),
-            description: "Flash model with chain-of-thought reasoning".to_string(),
+            id: "gemini-3-flash-preview".to_string(),
+            name: "Gemini 3 Flash (Preview)".to_string(),
+            description: "Gemini 3 fast preview model".to_string(),
+            context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "auto-gemini-2.5".to_string(),
+            name: "Auto (Gemini 2.5)".to_string(),
+            description: "Stable auto routing between Gemini 2.5 Pro and Flash".to_string(),
+            context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "gemini-2.5-pro".to_string(),
+            name: "Gemini 2.5 Pro".to_string(),
+            description: "Stable Pro model".to_string(),
+            context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "gemini-2.5-flash".to_string(),
+            name: "Gemini 2.5 Flash".to_string(),
+            description: "Stable Flash model".to_string(),
+            context_window: 1_000_000,
+            is_default: false,
+        },
+        GeminiModelInfo {
+            id: "gemini-2.5-flash-lite".to_string(),
+            name: "Gemini 2.5 Flash-Lite".to_string(),
+            description: "Stable lightweight model".to_string(),
             context_window: 1_000_000,
             is_default: false,
         },
@@ -508,7 +550,6 @@ pub struct GeminiWslModeInfo {
     pub is_windows: bool,
 }
 
-
 /// Get Gemini WSL mode configuration
 /// 使用全局缓存避免重复检测，减少 WSL 进程创建
 #[tauri::command]
@@ -564,15 +605,22 @@ fn do_get_gemini_wsl_mode_config() -> GeminiWslModeInfo {
     }
 }
 
-
 /// Set Gemini WSL mode configuration
 #[tauri::command]
-pub async fn set_gemini_wsl_mode_config(mode: String, wsl_distro: Option<String>) -> Result<(), String> {
+pub async fn set_gemini_wsl_mode_config(
+    mode: String,
+    wsl_distro: Option<String>,
+) -> Result<(), String> {
     let gemini_mode = match mode.as_str() {
         "auto" => wsl_utils::GeminiMode::Auto,
         "native" => wsl_utils::GeminiMode::Native,
         "wsl" => wsl_utils::GeminiMode::Wsl,
-        _ => return Err(format!("Invalid mode: {}. Must be 'auto', 'native', or 'wsl'", mode)),
+        _ => {
+            return Err(format!(
+                "Invalid mode: {}. Must be 'auto', 'native', or 'wsl'",
+                mode
+            ))
+        }
     };
 
     let config = wsl_utils::GeminiWslConfig {

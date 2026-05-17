@@ -1,4 +1,4 @@
-import { Zap, Brain, Sparkles, Crown } from "lucide-react";
+import { Zap, Brain, Sparkles, Crown, Gauge, Wand2, Feather, ClipboardList } from "lucide-react";
 import { ModelConfig, ThinkingModeConfig } from "./types";
 import { getCachedModelNames } from "@/lib/modelNameParser";
 
@@ -8,7 +8,8 @@ import { getCachedModelNames } from "@/lib/modelNameParser";
  */
 const DEFAULT_MODEL_NAMES: Record<string, string> = {
   sonnet: "Claude Sonnet 4.6",
-  opus: "Claude Opus 4.6",
+  opus: "Claude Opus 4.7",
+  haiku: "Claude Haiku 4.5",
 };
 
 /**
@@ -20,6 +21,7 @@ export function getModels(): ModelConfig[] {
   const cached = getCachedModelNames();
   const sonnetName = cached["sonnet"] || DEFAULT_MODEL_NAMES.sonnet;
   const opusName = cached["opus"] || DEFAULT_MODEL_NAMES.opus;
+  const haikuName = cached["haiku"] || DEFAULT_MODEL_NAMES.haiku;
   const sonnet1mName = cached["sonnet"]
     ? `${cached["sonnet"]} 1M`
     : `${DEFAULT_MODEL_NAMES.sonnet} 1M`;
@@ -28,6 +30,18 @@ export function getModels(): ModelConfig[] {
     : `${DEFAULT_MODEL_NAMES.opus} 1M`;
 
   return [
+    {
+      id: "default",
+      name: "Claude Default",
+      description: "Use Claude Code's recommended model for your account",
+      icon: <Gauge className="h-4 w-4" />
+    },
+    {
+      id: "best",
+      name: "Claude Best",
+      description: "Most capable available model, currently equivalent to Opus",
+      icon: <Wand2 className="h-4 w-4" />
+    },
     {
       id: "sonnet",
       name: sonnetName,
@@ -51,6 +65,18 @@ export function getModels(): ModelConfig[] {
       name: opus1mName,
       description: "Opus with 1 million token context",
       icon: <Crown className="h-4 w-4" />
+    },
+    {
+      id: "haiku",
+      name: haikuName,
+      description: "Fast and efficient for simple tasks",
+      icon: <Feather className="h-4 w-4" />
+    },
+    {
+      id: "opusplan",
+      name: "Claude Opus Plan",
+      description: "Opus for plan mode, Sonnet for execution",
+      icon: <ClipboardList className="h-4 w-4" />
     }
   ];
 }
@@ -63,8 +89,8 @@ export const MODELS: ModelConfig[] = getModels();
 
 /**
  * Thinking modes configuration
- * Claude 4.6 Adaptive Thinking with effort levels
- * Controls thinking depth via CLAUDE_CODE_THINKING_EFFORT env var
+ * Claude adaptive effort levels.
+ * Controls effort via CLAUDE_CODE_EFFORT_LEVEL env var.
  *
  * Note: Names and descriptions are translation keys that will be resolved at runtime
  */
@@ -98,9 +124,16 @@ export const THINKING_MODES: ThinkingModeConfig[] = [
   },
   {
     id: "adaptive",
+    effort: "xhigh",
+    name: "promptInput.thinkingEffortXHigh",
+    description: "promptInput.thinkingEffortXHighDesc",
+    level: 4,
+  },
+  {
+    id: "adaptive",
     effort: "max",
     name: "promptInput.thinkingEffortMax",
     description: "promptInput.thinkingEffortMaxDesc",
-    level: 4,
+    level: 5,
   }
 ];

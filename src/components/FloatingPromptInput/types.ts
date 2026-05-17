@@ -3,18 +3,27 @@ import { ReactNode } from "react";
 /**
  * Model type definition
  */
-export type ModelType = "sonnet" | "opus" | "sonnet1m" | "opus1m" | "custom";
+export type ModelType =
+  | "default"
+  | "best"
+  | "sonnet"
+  | "sonnet1m"
+  | "opus"
+  | "opus1m"
+  | "haiku"
+  | "opusplan"
+  | "custom";
 
 /**
  * Thinking mode type definition
- * Claude 4.6 Adaptive Thinking with effort levels
+ * Claude adaptive thinking with effort levels
  */
 export type ThinkingMode = "off" | "adaptive";
 
 /**
- * Thinking effort level (Claude 4.6 Adaptive Thinking)
+ * Thinking effort level
  */
-export type ThinkingEffort = "low" | "medium" | "high" | "max";
+export type ThinkingEffort = "low" | "medium" | "high" | "xhigh" | "max";
 
 /**
  * Model configuration

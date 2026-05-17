@@ -35,7 +35,7 @@ const FloatingPromptInputInner = (
     onSend,
     isLoading = false,
     disabled = false,
-    defaultModel = "sonnet",
+    defaultModel = "default",
     sessionModel,
     projectPath,
     sessionId,
@@ -61,17 +61,21 @@ const FloatingPromptInputInner = (
     if (!modelStr) return null;
 
     const lowerModel = modelStr.toLowerCase();
+    if (lowerModel === "default") return "default";
+    if (lowerModel === "best") return "best";
+    if (lowerModel.includes("opusplan")) return "opusplan";
     if (lowerModel.includes("opus") && lowerModel.includes("1m")) return "opus1m";
     if (lowerModel.includes("opus")) return "opus";
     if (lowerModel.includes("sonnet") && lowerModel.includes("1m")) return "sonnet1m";
     if (lowerModel.includes("sonnet")) return "sonnet";
+    if (lowerModel.includes("haiku")) return "haiku";
 
     return null;
   };
 
   // Determine initial model:
   // 1. Historical session: use sessionModel
-  // 2. New session: use user's default model or fallback to "sonnet"
+  // 2. New session: use user's default model or fallback to Claude Code default
   const getInitialModel = (): ModelType => {
     // If this is a historical session with saved model, use it
     const parsedSessionModel = parseSessionModel(sessionModel);
@@ -83,7 +87,7 @@ const FloatingPromptInputInner = (
     if (userDefaultModel) {
       return userDefaultModel;
     }
-    // Fall back to prop default or "sonnet"
+    // Fall back to prop default or Claude Code default
     return defaultModel;
   };
 
@@ -116,19 +120,20 @@ const FloatingPromptInputInner = (
   }, []);
 
   // Initialize thinking mode from settings.json (source of truth)
-  // Claude 4.6: Read CLAUDE_CODE_THINKING_EFFORT from settings.json env
+  // Read Claude Code effort settings from settings.json env
   useEffect(() => {
     const initThinkingMode = async () => {
       try {
         const settings = await api.getClaudeSettings();
-        const effort = settings?.env?.CLAUDE_CODE_THINKING_EFFORT;
-        if (effort && ['low', 'medium', 'high', 'max'].includes(effort)) {
+        const envVars = settings?.data?.env || settings?.env;
+        const effort = envVars?.CLAUDE_CODE_EFFORT_LEVEL || envVars?.CLAUDE_CODE_THINKING_EFFORT;
+        if (effort && ['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) {
           dispatch({ type: "SET_THINKING_MODE", payload: { mode: 'adaptive', effort: effort as ThinkingEffort } });
           localStorage.setItem('thinking_mode', 'adaptive');
           localStorage.setItem('thinking_effort', effort);
         } else {
           // Check legacy MAX_THINKING_TOKENS for backward compatibility
-          const hasLegacy = settings?.env?.MAX_THINKING_TOKENS !== undefined;
+          const hasLegacy = envVars?.MAX_THINKING_TOKENS !== undefined;
           if (hasLegacy) {
             dispatch({ type: "SET_THINKING_MODE", payload: { mode: 'adaptive', effort: 'high' } });
             localStorage.setItem('thinking_mode', 'adaptive');
@@ -374,11 +379,23 @@ const FloatingPromptInputInner = (
         if (envVars && typeof envVars === 'object') {
           const customModel = envVars.ANTHROPIC_MODEL ||
                              envVars.ANTHROPIC_DEFAULT_SONNET_MODEL ||
-                             envVars.ANTHROPIC_DEFAULT_OPUS_MODEL;
+                             envVars.ANTHROPIC_DEFAULT_OPUS_MODEL ||
+                             envVars.ANTHROPIC_CUSTOM_MODEL_OPTION;
 
           if (customModel && typeof customModel === 'string') {
-            // Check if it's a built-in model ID (sonnet, opus, sonnet1m)
-            const isBuiltInModel = ['sonnet', 'opus', 'sonnet1m', 'opus1m'].includes(customModel.toLowerCase());
+            const normalizedCustomModel = customModel.toLowerCase();
+            const isBuiltInModel = [
+              'default',
+              'best',
+              'sonnet',
+              'opus',
+              'sonnet1m',
+              'opus1m',
+              'haiku',
+              'opusplan',
+              'sonnet[1m]',
+              'opus[1m]',
+            ].includes(normalizedCustomModel);
 
             if (!isBuiltInModel) {
               // This is a custom model - add it to the list
@@ -412,8 +429,8 @@ const FloatingPromptInputInner = (
     setPrompt: (text: string) => dispatch({ type: "SET_PROMPT", payload: text }),
   }));
 
-  // Toggle thinking mode - cycle through: off → high → max → low → medium → off
-  const EFFORT_CYCLE: (ThinkingEffort | 'off')[] = ['off', 'high', 'max', 'low', 'medium'];
+  // Toggle thinking mode - cycle through: off → high → xhigh → max → low → medium → off
+  const EFFORT_CYCLE: (ThinkingEffort | 'off')[] = ['off', 'high', 'xhigh', 'max', 'low', 'medium'];
 
   const handleToggleThinkingMode = useCallback(async () => {
     const currentMode = state.selectedThinkingMode;

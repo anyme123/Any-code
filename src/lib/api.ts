@@ -343,6 +343,12 @@ export interface CurrentProviderConfig {
   anthropic_api_key?: string;
   anthropic_api_key_helper?: string;
   anthropic_model?: string;
+  anthropic_small_fast_model?: string;
+  anthropic_default_opus_model?: string;
+  anthropic_default_sonnet_model?: string;
+  anthropic_custom_model_option?: string;
+  api_timeout_ms?: string;
+  claude_code_disable_nonessential_traffic?: string;
 }
 
 /**
@@ -723,7 +729,7 @@ export const api = {
           project_id: projectId,
           project_path: cs.projectPath,
           created_at: cs.createdAt,
-          model: cs.model || 'gpt-5.3-codex',
+          model: cs.model || 'gpt-5.5',
           engine: 'codex' as const,
           // 🆕 Use actual first message from JSONL file
           first_message: cs.firstMessage || `Codex Session`,
@@ -963,10 +969,10 @@ export const api = {
   },
 
   /**
-   * Updates the thinking mode using Claude 4.6 Adaptive Thinking
-   * Sets CLAUDE_CODE_THINKING_EFFORT env var in settings.json
+   * Updates the Claude Code effort mode.
+   * Sets CLAUDE_CODE_EFFORT_LEVEL env var in settings.json.
    * @param enabled - Whether to enable adaptive thinking
-   * @param effort - Effort level: low, medium, high, max (only used when enabled)
+   * @param effort - Effort level: low, medium, high, xhigh, max (only used when enabled)
    * @returns Promise resolving when the settings are updated
    */
   async updateThinkingMode(enabled: boolean, effort?: string): Promise<string> {
@@ -3826,10 +3832,10 @@ export const api = {
 
   /**
    * Updates Codex reasoning effort level in config.toml
-   * @param level - The reasoning level: 'low', 'medium', 'high', or 'xhigh'
+   * @param level - The reasoning level: 'minimal', 'low', 'medium', 'high', or 'xhigh'
    * @returns Promise resolving to success message
    */
-  async updateCodexReasoningLevel(level: 'low' | 'medium' | 'high' | 'xhigh'): Promise<string> {
+  async updateCodexReasoningLevel(level: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'): Promise<string> {
     try {
       return await invoke<string>("update_codex_reasoning_level", { level });
     } catch (error) {

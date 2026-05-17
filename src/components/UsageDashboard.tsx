@@ -80,6 +80,11 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ onBack }) => {
 
   const getModelDisplayName = useCallback((model: string): string => {
     const modelMap: Record<string, string> = {
+      "claude-opus-4-7": "Opus 4.7",
+      "claude-opus-4.7": "Opus 4.7",
+      "claude-sonnet-4-6": "Sonnet 4.6",
+      "claude-sonnet-4.6": "Sonnet 4.6",
+      "claude-haiku-4-5": "Haiku 4.5",
       "claude-4-opus": "Opus 4",
       "claude-4-sonnet": "Sonnet 4",
       "claude-3.5-sonnet": "Sonnet 3.5",

@@ -160,8 +160,8 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
     return {
       engine: 'claude',
       codexMode: 'read-only',
-      codexModel: 'gpt-5.2',
-      geminiModel: 'gemini-3-flash',
+      codexModel: 'gpt-5.5',
+      geminiModel: 'auto-gemini-3',
     };
   });
 
@@ -435,6 +435,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
     executionEngine: executionEngineConfig.engine, // 🆕 Codex integration
     codexMode: executionEngineConfig.codexMode,    // 🆕 Codex integration
     codexModel: executionEngineConfig.codexModel,  // 🆕 Codex integration
+    codexReasoningLevel: executionEngineConfig.codexReasoningLevel, // 🆕 Codex integration
     geminiModel: executionEngineConfig.geminiModel,           // 🆕 Gemini integration
     geminiApprovalMode: executionEngineConfig.geminiApprovalMode, // 🆕 Gemini integration
     hasActiveSessionRef,
@@ -476,7 +477,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
   useEffect(() => {
     // 创建一个简化的发送函数，只需要 prompt 参数
     const simpleSendPrompt = (prompt: string) => {
-      handleSendPromptWithScroll(prompt, 'sonnet'); // 使用默认模型
+      handleSendPromptWithScroll(prompt, 'default'); // 使用 Claude Code 默认模型
     };
     setSendPromptCallback(simpleSendPrompt);
 
@@ -489,7 +490,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
   // 🆕 设置 UserQuestion 的发送消息回调，用于答案提交后自动发送
   useEffect(() => {
     const simpleSendMessage = (message: string) => {
-      handleSendPromptWithScroll(message, 'sonnet'); // 使用默认模型
+      handleSendPromptWithScroll(message, 'default'); // 使用 Claude Code 默认模型
     };
     setSendMessageCallback(simpleSendMessage);
 
@@ -1206,7 +1207,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
                         <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                          {queuedPrompt.model === "opus1m" ? "Opus 1M" : queuedPrompt.model === "opus" ? "Opus" : queuedPrompt.model === "sonnet1m" ? "Sonnet 1M" : "Sonnet"}
+                          {queuedPrompt.model === "default" ? "Default" : queuedPrompt.model === "best" ? "Best" : queuedPrompt.model === "opusplan" ? "Opus Plan" : queuedPrompt.model === "haiku" ? "Haiku" : queuedPrompt.model === "opus1m" ? "Opus 1M" : queuedPrompt.model === "opus" ? "Opus" : queuedPrompt.model === "sonnet1m" ? "Sonnet 1M" : "Sonnet"}
                         </span>
                       </div>
                       <p className="text-sm line-clamp-2 break-words">{queuedPrompt.prompt}</p>

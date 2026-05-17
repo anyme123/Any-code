@@ -76,7 +76,7 @@ export class ClaudeSDKService {
 
   constructor(config: ClaudeSDKConfig = {}) {
     this.config = {
-      defaultModel: 'claude-3-5-sonnet-20241022',
+      defaultModel: 'claude-sonnet-4-6',
       maxTokens: 4000,
       temperature: 0.7,
       topP: 1,
@@ -378,9 +378,12 @@ export class ClaudeSDKService {
    */
   getAvailableModels(): string[] {
     return [
-      'claude-3-5-sonnet-20241022',
-      'claude-3-opus-20240229',
-      'claude-3-sonnet-20240229',
+      'claude-opus-4-7',
+      'claude-sonnet-4-6',
+      'claude-haiku-4-5-20251001',
+      'claude-opus-4-6',
+      'claude-opus-4-5-20251101',
+      'claude-sonnet-4-5-20250929',
     ];
   }
 

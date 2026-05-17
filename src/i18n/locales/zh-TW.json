@@ -139,7 +139,7 @@
     "cancelled": "已取消",
     "model": {
       "claude46Sonnet": "Claude Sonnet 4.6",
-      "claude46Opus": "Claude Opus 4.6",
+      "claude46Opus": "Claude Opus 4.7",
       "claude45Sonnet": "Claude 4.5 Sonnet",
       "claude41Opus": "Claude 4.1 Opus"
     }
@@ -254,7 +254,7 @@
     "save": "儲存",
     "model": "模型",
     "claude46Sonnet": "Claude Sonnet 4.6",
-    "claude46Opus": "Claude Opus 4.6",
+    "claude46Opus": "Claude Opus 4.7",
     "claude45Sonnet": "Claude 4.5 Sonnet",
     "claude41Opus": "Claude 4.1 Opus",
     "fasterEfficient": "更快，適用於大多數任務",
@@ -961,7 +961,7 @@
     "descriptionPlaceholderClaude": "例如：OpenAI 官方 API",
     "authTokenLabel": "認證 Token",
     "modelNameOptional": "模型名稱",
-    "modelNamePlaceholder": "claude-3-5-sonnet-20241022 (選填)",
+    "modelNamePlaceholder": "claude-sonnet-4-6 或 sonnet (選填)",
     "modelNameHelp": "部分代理商需要指定特定的模型名稱",
     "enableAutoApiKeyHelper": "自動產生 API Key Helper",
     "autoKeyHelperEnabled": "已啟用：系統將根據認證Token自動產生 apiKeyHelper 命令（格式：echo 'your-token'）",
@@ -1025,6 +1025,8 @@
     "thinkingEffortMediumDesc": "平衡速度與思考深度",
     "thinkingEffortHigh": "思考: 高",
     "thinkingEffortHighDesc": "深度思考，推薦用於複雜任務",
+    "thinkingEffortXHigh": "思考: 超高",
+    "thinkingEffortXHighDesc": "面向長時間代理式任務的擴展推理能力",
     "thinkingEffortMax": "思考: 最大",
     "thinkingEffortMaxDesc": "最大思考深度，適合最複雜的推理",
     "deepThinkingTokens": "Claude 將進行深度思考 (10K tokens)",

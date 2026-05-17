@@ -34,9 +34,9 @@ interface MutableBillingEvent extends BillingEvent {
   order: number;
 }
 
-const MODEL_FALLBACK = 'claude-sonnet-4.6';
-const CODEX_MODEL_FALLBACK = 'gpt-5.3-codex';
-const GEMINI_MODEL_FALLBACK = 'gemini-3-flash';
+const MODEL_FALLBACK = 'claude-sonnet-4-6';
+const CODEX_MODEL_FALLBACK = 'gpt-5.5';
+const GEMINI_MODEL_FALLBACK = 'auto-gemini-3';
 
 /**
  * 检测消息的引擎类型

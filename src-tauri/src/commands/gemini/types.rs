@@ -214,7 +214,11 @@ pub struct GeminiStats {
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct TokenUsage {
     /// Prompt/input token count
-    #[serde(rename = "promptTokenCount", alias = "prompt_token_count", alias = "prompt")]
+    #[serde(
+        rename = "promptTokenCount",
+        alias = "prompt_token_count",
+        alias = "prompt"
+    )]
     pub prompt_token_count: Option<u64>,
 
     /// Candidate/output token count (excludes thinking tokens in some APIs)
@@ -226,7 +230,11 @@ pub struct TokenUsage {
     pub candidates_token_count: Option<u64>,
 
     /// Total token count (prompt + output + other categories)
-    #[serde(rename = "totalTokenCount", alias = "total_token_count", alias = "total")]
+    #[serde(
+        rename = "totalTokenCount",
+        alias = "total_token_count",
+        alias = "total"
+    )]
     pub total_token_count: Option<u64>,
 
     /// Cached content token count (subset of prompt tokens)
@@ -238,7 +246,11 @@ pub struct TokenUsage {
     pub cached_content_token_count: Option<u64>,
 
     /// Thinking/reasoning token count
-    #[serde(rename = "thoughtsTokenCount", alias = "thoughts_token_count", alias = "thoughts")]
+    #[serde(
+        rename = "thoughtsTokenCount",
+        alias = "thoughts_token_count",
+        alias = "thoughts"
+    )]
     pub thoughts_token_count: Option<u64>,
 
     /// Tool-use prompt tokens
@@ -264,7 +276,7 @@ pub struct GeminiExecutionOptions {
     /// User prompt
     pub prompt: String,
 
-    /// Model to use (e.g., "gemini-2.5-pro", "gemini-2.5-flash")
+    /// Model to use (e.g., "auto-gemini-3", "pro", "flash", "gemini-2.5-pro")
     pub model: Option<String>,
 
     /// Approval mode: "auto_edit" or "yolo"
@@ -286,7 +298,7 @@ impl Default for GeminiExecutionOptions {
         Self {
             project_path: String::new(),
             prompt: String::new(),
-            model: Some("gemini-2.5-pro".to_string()),
+            model: Some("auto-gemini-3".to_string()),
             approval_mode: Some("auto_edit".to_string()),
             include_directories: None,
             session_id: None,

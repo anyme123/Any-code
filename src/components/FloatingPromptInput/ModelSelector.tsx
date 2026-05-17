@@ -25,7 +25,9 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
 }) => {
   const [open, setOpen] = React.useState(false);
   const [currentDefaultModel, setCurrentDefaultModel] = React.useState<ModelType | null>(() => getDefaultModel());
-  const selectedModelData = availableModels.find(m => m.id === selectedModel) || availableModels[0];
+  const selectedModelData = availableModels.find(m => m.id === selectedModel)
+    || availableModels.find(m => m.id === 'default')
+    || availableModels[0];
 
   // Handle setting default model
   const handleSetDefault = (e: React.MouseEvent, modelId: ModelType) => {

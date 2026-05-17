@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronUp, Check, Star, Brain, Cpu, Rocket, Zap } from "lucide-react";
+import { ChevronUp, Check, Star, Brain, Cpu, Rocket, Zap, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -23,27 +23,48 @@ export interface CodexModelConfig {
  * Default Codex models used as fallback when no cached data is available.
  * Intentionally kept as the known baseline; dynamically discovered models
  * from stream init messages will merge/override these.
- * Updated: March 2026
+ * Updated: May 2026
  */
 const DEFAULT_CODEX_MODELS: CodexModelConfig[] = [
   {
-    id: 'gpt-5.4',
-    name: 'GPT-5.4',
-    description: '最强旗舰模型，1M 上下文，支持 /fast（2026年3月）',
+    id: 'gpt-5.5',
+    name: 'GPT-5.5',
+    description: '推荐默认模型，适合复杂编码、工具调用和长上下文任务',
     icon: <Star className="h-4 w-4 text-purple-500" />,
     isDefault: true,
   },
   {
+    id: 'gpt-5.5-pro',
+    name: 'GPT-5.5 Pro',
+    description: '高计算模型，适合最困难的审查和规划任务',
+    icon: <Brain className="h-4 w-4 text-red-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gpt-5.4',
+    name: 'GPT-5.4',
+    description: '上一代高性价比旗舰模型',
+    icon: <Star className="h-4 w-4 text-violet-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gpt-5.4-mini',
+    name: 'GPT-5.4 Mini',
+    description: '更快、更低成本，适合轻量任务和子代理',
+    icon: <Gauge className="h-4 w-4 text-cyan-500" />,
+    isDefault: false,
+  },
+  {
     id: 'gpt-5.3-codex',
     name: 'GPT-5.3 Codex',
-    description: '专用代码模型，比 5.2 快 25%（2026年2月）',
+    description: '专用代码模型，适合账号仍优先提供 Codex 专线时使用',
     icon: <Rocket className="h-4 w-4 text-emerald-500" />,
     isDefault: false,
   },
   {
     id: 'gpt-5.3-codex-spark',
     name: 'GPT-5.3 Codex Spark',
-    description: '轻量快速版，Cerebras WSE-3 芯片加速',
+    description: '研究预览轻量快速版，适合实时编码迭代',
     icon: <Zap className="h-4 w-4 text-amber-500" />,
     isDefault: false,
   },
@@ -92,6 +113,15 @@ function getCodexModelIcon(modelId: string): React.ReactNode {
   const lower = modelId.toLowerCase();
   if (lower.includes('5.4-pro')) {
     return <Star className="h-4 w-4 text-red-500" />;
+  }
+  if (lower.includes('5.5-pro') || lower.includes('5-pro')) {
+    return <Brain className="h-4 w-4 text-red-500" />;
+  }
+  if (lower.includes('5.5')) {
+    return <Star className="h-4 w-4 text-purple-500" />;
+  }
+  if (lower.includes('mini') || lower.includes('nano')) {
+    return <Gauge className="h-4 w-4 text-cyan-500" />;
   }
   if (lower.includes('5.4')) {
     return <Star className="h-4 w-4 text-purple-500" />;

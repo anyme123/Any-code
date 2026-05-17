@@ -25,7 +25,7 @@ export type InputAction =
 
 export const initialState: InputState = {
   prompt: "",
-  selectedModel: "sonnet",
+  selectedModel: "default",
   selectedThinkingMode: "off",
   selectedThinkingEffort: undefined,
   isExpanded: false,
@@ -34,8 +34,8 @@ export const initialState: InputState = {
   executionEngineConfig: {
     engine: "claude",
     codexMode: "read-only",
-    codexModel: "gpt-5.3-codex",
-    geminiModel: "gemini-3-flash",
+    codexModel: "gpt-5.5",
+    geminiModel: "auto-gemini-3",
   },
   enableProjectContext: false,
 };

@@ -28,6 +28,9 @@ pub struct CurrentConfig {
     pub anthropic_model: Option<String>,
     // Claude Code 2025 新增字段
     pub anthropic_small_fast_model: Option<String>,
+    pub anthropic_default_opus_model: Option<String>,
+    pub anthropic_default_sonnet_model: Option<String>,
+    pub anthropic_custom_model_option: Option<String>,
     pub api_timeout_ms: Option<String>,
     pub claude_code_disable_nonessential_traffic: Option<String>,
 }
@@ -265,6 +268,18 @@ pub fn get_current_provider_config() -> Result<CurrentConfig, String> {
             .get("ANTHROPIC_SMALL_FAST_MODEL")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string()),
+        anthropic_default_opus_model: env_vars
+            .get("ANTHROPIC_DEFAULT_OPUS_MODEL")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        anthropic_default_sonnet_model: env_vars
+            .get("ANTHROPIC_DEFAULT_SONNET_MODEL")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+        anthropic_custom_model_option: env_vars
+            .get("ANTHROPIC_CUSTOM_MODEL_OPTION")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
         api_timeout_ms: env_vars
             .get("API_TIMEOUT_MS")
             .and_then(|v| v.as_str())
@@ -317,6 +332,9 @@ pub async fn switch_provider_config(
 
     // 清理Claude Code 2025的新环境变量
     env_obj.remove("ANTHROPIC_SMALL_FAST_MODEL");
+    env_obj.remove("ANTHROPIC_DEFAULT_OPUS_MODEL");
+    env_obj.remove("ANTHROPIC_DEFAULT_SONNET_MODEL");
+    env_obj.remove("ANTHROPIC_CUSTOM_MODEL_OPTION");
     env_obj.remove("API_TIMEOUT_MS");
     env_obj.remove("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC");
 

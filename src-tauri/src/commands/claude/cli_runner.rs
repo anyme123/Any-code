@@ -81,14 +81,17 @@ impl Drop for ClaudeProcessState {
 
 /// Maps frontend model IDs to Claude CLI model aliases
 /// Converts frontend-friendly model names to official Claude Code model identifiers
-/// Updated to use Claude 4.6 (released February 2026) as the latest models
+/// Uses Claude Code aliases so model routing can stay current.
 pub(super) fn map_model_to_claude_alias(model: &str) -> String {
     match model {
+        "default" => "default".to_string(),
+        "best" => "best".to_string(),
         "sonnet1m" => "sonnet[1m]".to_string(),
         "sonnet" => "sonnet".to_string(),
         "opus1m" => "opus[1m]".to_string(),
-        // Use 'opus' alias which automatically resolves to latest Opus (Claude 4.6)
         "opus" => "opus".to_string(),
+        "haiku" => "haiku".to_string(),
+        "opusplan" => "opusplan".to_string(),
         // Pass through any other model names unchanged (for future compatibility)
         _ => model.to_string(),
     }
@@ -615,7 +618,10 @@ pub async fn cancel_claude_execution(
         let claude_state = app.state::<ClaudeProcessState>();
         let last_pid = { *claude_state.last_spawned_pid.lock().await };
         if let Some(pid) = last_pid {
-            log::info!("Attempting to kill Claude process via last spawned PID: {}", pid);
+            log::info!(
+                "Attempting to kill Claude process via last spawned PID: {}",
+                pid
+            );
             match platform::kill_process_tree(pid) {
                 Ok(_) => {
                     log::info!("Successfully killed process tree via last spawned PID");
@@ -766,21 +772,19 @@ async fn spawn_claude_process(
     #[cfg(windows)]
     let job_object: Option<Arc<JobObject>> = if pid != 0 {
         match JobObject::create() {
-            Ok(job) => {
-                match job.assign_process_by_pid(pid) {
-                    Ok(_) => {
-                        log::info!(
-                            "🔧 FIX: Assigned process {} to Job Object immediately after spawn",
-                            pid
-                        );
-                        Some(Arc::new(job))
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to assign process {} to Job Object: {}", pid, e);
-                        None
-                    }
+            Ok(job) => match job.assign_process_by_pid(pid) {
+                Ok(_) => {
+                    log::info!(
+                        "🔧 FIX: Assigned process {} to Job Object immediately after spawn",
+                        pid
+                    );
+                    Some(Arc::new(job))
                 }
-            }
+                Err(e) => {
+                    log::warn!("Failed to assign process {} to Job Object: {}", pid, e);
+                    None
+                }
+            },
             Err(e) => {
                 log::warn!("Failed to create Job Object: {}", e);
                 None
@@ -871,10 +875,8 @@ async fn spawn_claude_process(
                             // Now register with ProcessRegistry using Claude's session ID
                             // 🔧 FIX: Pass the pre-created Job Object to avoid orphan processes
                             #[cfg(windows)]
-                            let job_object_for_register = job_object_holder_clone
-                                .lock()
-                                .unwrap()
-                                .take();
+                            let job_object_for_register =
+                                job_object_holder_clone.lock().unwrap().take();
                             #[cfg(not(windows))]
                             let job_object_for_register: Option<()> = None;
 
@@ -1070,8 +1072,7 @@ async fn spawn_claude_process(
                     });
                     let _ = app_handle_wait.emit("claude-session-state", &event_payload);
 
-                    let _ =
-                        app_handle_wait.emit(&format!("claude-complete:{}", session_id), false);
+                    let _ = app_handle_wait.emit(&format!("claude-complete:{}", session_id), false);
                 }
                 // 🔒 CRITICAL FIX: 全局事件包含 tab_id
                 let global_payload = serde_json::json!({

@@ -21,9 +21,9 @@ export { detectApiFormat, normalizeApiUrl, normalizeOpenAIUrl, normalizeAnthropi
 export const PRESET_PROVIDERS = {
   openai: {
     id: 'openai',
-    name: 'OpenAI GPT-4',
+    name: 'OpenAI GPT-5.5',
     apiUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o',
+    model: 'gpt-5.5',
     apiFormat: 'openai' as const,
     enabled: false,
     apiKey: '',
@@ -57,9 +57,9 @@ export const PRESET_PROVIDERS = {
   },
   gemini: {
     id: 'gemini',
-    name: 'Google Gemini 2.0',
+    name: 'Google Gemini',
     apiUrl: 'https://generativelanguage.googleapis.com',
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-flash',
     apiFormat: 'gemini' as const,
     enabled: false,
     apiKey: '',
@@ -68,7 +68,7 @@ export const PRESET_PROVIDERS = {
     id: 'anthropic',
     name: 'Anthropic Claude',
     apiUrl: 'https://api.anthropic.com',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     apiFormat: 'anthropic' as const,
     enabled: false,
     apiKey: '',

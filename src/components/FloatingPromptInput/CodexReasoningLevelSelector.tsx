@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronUp, Check, Brain, Zap, Sparkles, Rocket } from "lucide-react";
+import { ChevronUp, Check, Brain, Zap, Sparkles, Rocket, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -7,11 +7,10 @@ import { api } from "@/lib/api";
 
 /**
  * Codex reasoning level configuration
- * Based on OpenAI's reasoning_effort parameter for o1/o3 models
- * Reference: https://platform.openai.com/docs/guides/reasoning
+ * Based on OpenAI/Codex model_reasoning_effort.
  */
 /** Reasoning level values used in config.toml (model_reasoning_effort) */
-export type CodexReasoningLevel = 'low' | 'medium' | 'high' | 'xhigh';
+export type CodexReasoningLevel = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
 export interface CodexReasoningLevelConfig {
   id: CodexReasoningLevel;
@@ -25,12 +24,21 @@ export interface CodexReasoningLevelConfig {
 
 /**
  * Reasoning level options
- * - low: Fast responses, minimal reasoning tokens
+ * - minimal: Lowest-latency responses
+ * - low: Fast responses, fewer reasoning tokens
  * - medium: Balanced (default)
  * - high: Detailed reasoning, more tokens
- * - extra_high: Maximum reasoning depth (custom extension)
+ * - xhigh: Maximum reasoning depth
  */
 export const CODEX_REASONING_LEVELS: CodexReasoningLevelConfig[] = [
+  {
+    id: 'minimal',
+    name: '最小',
+    description: '最低延迟，适合非常轻量的任务',
+    icon: <Gauge className="h-4 w-4 text-cyan-500" />,
+    isDefault: false,
+    configValue: 'minimal',
+  },
   {
     id: 'low',
     name: '低',

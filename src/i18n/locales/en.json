@@ -139,7 +139,7 @@
     "cancelled": "Cancelled",
     "model": {
       "claude46Sonnet": "Claude Sonnet 4.6",
-      "claude46Opus": "Claude Opus 4.6",
+      "claude46Opus": "Claude Opus 4.7",
       "claude45Sonnet": "Claude 4.5 Sonnet",
       "claude41Opus": "Claude 4.1 Opus"
     }
@@ -254,7 +254,7 @@
     "save": "Save",
     "model": "Model",
     "claude46Sonnet": "Claude Sonnet 4.6",
-    "claude46Opus": "Claude Opus 4.6",
+    "claude46Opus": "Claude Opus 4.7",
     "claude45Sonnet": "Claude 4.5 Sonnet",
     "claude41Opus": "Claude 4.1 Opus",
     "fasterEfficient": "Faster, suitable for most tasks",
@@ -961,7 +961,7 @@
     "descriptionPlaceholderClaude": "e.g., OpenAI Official API",
     "authTokenLabel": "Auth Token",
     "modelNameOptional": "Model Name",
-    "modelNamePlaceholder": "claude-3-5-sonnet-20241022 (optional)",
+    "modelNamePlaceholder": "claude-sonnet-4-6 or sonnet (optional)",
     "modelNameHelp": "Some providers require specifying a specific model name",
     "enableAutoApiKeyHelper": "Auto-generate API Key Helper",
     "autoKeyHelperEnabled": "Enabled: System will auto-generate apiKeyHelper command based on Auth Token (format: echo 'your-token')",
@@ -1029,6 +1029,8 @@
     "thinkingEffortMediumDesc": "Balance speed and thinking depth",
     "thinkingEffortHigh": "Thinking: High",
     "thinkingEffortHighDesc": "Deep thinking, recommended for complex tasks",
+    "thinkingEffortXHigh": "Thinking: XHigh",
+    "thinkingEffortXHighDesc": "Extended capability for long-horizon agentic work",
     "thinkingEffortMax": "Thinking: Max",
     "thinkingEffortMaxDesc": "Maximum thinking depth for hardest reasoning",
     "deepThinkingTokens": "Claude will perform deep thinking (10K tokens)",

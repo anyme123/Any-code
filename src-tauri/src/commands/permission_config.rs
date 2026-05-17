@@ -140,10 +140,13 @@ pub fn build_execution_args(config: &ClaudeExecutionConfig, model: &str) -> Vec<
 
     // prompt 通过 stdin 传递，不再作为命令行参数
 
-    // 🔥 修复：仅为内置模型添加 --model 参数
-    // 对于自定义模型（非 sonnet/opus/sonnet[1m]/opus[1m]），通过 ANTHROPIC_MODEL 环境变量设置
+    // 🔥 修复：仅为内置模型/Claude Code aliases 添加 --model 参数
+    // 对于自定义模型，通过 ANTHROPIC_MODEL 环境变量设置
     // 避免命令行参数与环境变量冲突导致发送失败
-    let is_builtin_model = model == "sonnet" || model == "opus" || model == "sonnet[1m]" || model == "opus[1m]";
+    let is_builtin_model = matches!(
+        model,
+        "default" | "best" | "sonnet" | "opus" | "haiku" | "sonnet[1m]" | "opus[1m]" | "opusplan"
+    );
     if is_builtin_model {
         args.push("--model".to_string());
         args.push(model.to_string());

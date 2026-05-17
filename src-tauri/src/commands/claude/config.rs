@@ -386,8 +386,8 @@ pub async fn save_claude_settings(settings: serde_json::Value) -> Result<String,
     Ok("Settings saved successfully".to_string())
 }
 
-/// Updates the thinking mode in settings.json using Claude 4.6 Adaptive Thinking
-/// Sets CLAUDE_CODE_THINKING_EFFORT env var and cleans up legacy MAX_THINKING_TOKENS
+/// Updates the effort level in settings.json.
+/// Sets CLAUDE_CODE_EFFORT_LEVEL env var and cleans up legacy MAX_THINKING_TOKENS.
 #[tauri::command]
 pub async fn update_thinking_mode(enabled: bool, effort: Option<String>) -> Result<String, String> {
     log::info!(
@@ -425,17 +425,19 @@ pub async fn update_thinking_mode(enabled: bool, effort: Option<String>) -> Resu
         .as_object_mut()
         .ok_or("env is not an object")?;
 
-    // Update CLAUDE_CODE_THINKING_EFFORT (Claude 4.6 Adaptive Thinking)
+    // Update CLAUDE_CODE_EFFORT_LEVEL.
     if enabled {
         let effort_value = effort.unwrap_or_else(|| "high".to_string());
         env_obj.insert(
-            "CLAUDE_CODE_THINKING_EFFORT".to_string(),
+            "CLAUDE_CODE_EFFORT_LEVEL".to_string(),
             serde_json::json!(effort_value),
         );
-        log::info!("Set CLAUDE_CODE_THINKING_EFFORT to {}", effort_value);
-    } else {
         env_obj.remove("CLAUDE_CODE_THINKING_EFFORT");
-        log::info!("Removed CLAUDE_CODE_THINKING_EFFORT from env");
+        log::info!("Set CLAUDE_CODE_EFFORT_LEVEL to {}", effort_value);
+    } else {
+        env_obj.remove("CLAUDE_CODE_EFFORT_LEVEL");
+        env_obj.remove("CLAUDE_CODE_THINKING_EFFORT");
+        log::info!("Removed Claude Code effort env vars");
     }
 
     // Clean up legacy fields
@@ -1078,7 +1080,8 @@ fn do_get_claude_wsl_mode_config() -> ClaudeWslModeInfo {
     };
 
     #[cfg(not(target_os = "windows"))]
-    let (wsl_available, available_distros, native_available, is_windows) = (false, vec![], true, false);
+    let (wsl_available, available_distros, native_available, is_windows) =
+        (false, vec![], true, false);
 
     let wsl_claude_version = if runtime.enabled {
         wsl_utils::get_wsl_claude_version(runtime.distro.as_deref())
@@ -1139,8 +1142,5 @@ pub async fn set_claude_wsl_mode_config(
         config.wsl_distro
     );
 
-    Ok(
-        "Configuration saved. Please restart the app for changes to take effect."
-            .to_string(),
-    )
+    Ok("Configuration saved. Please restart the app for changes to take effect.".to_string())
 }

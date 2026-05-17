@@ -96,12 +96,61 @@ struct ModelPricing {
 fn get_codex_pricing(model: &str) -> ModelPricing {
     let normalized = model.to_lowercase();
 
+    // GPT-5.5 Pro (premium tier)
+    if normalized.contains("5.5-pro") || normalized.contains("5_5_pro") {
+        return ModelPricing {
+            input: 30.00,
+            output: 180.00,
+            cache_read: 0.00,
+        };
+    }
+
+    // GPT-5 Pro
+    if normalized.contains("gpt-5-pro") || normalized.contains("gpt_5_pro") {
+        return ModelPricing {
+            input: 15.00,
+            output: 120.00,
+            cache_read: 0.00,
+        };
+    }
+
+    // GPT-5.5 (recommended Codex model)
+    if normalized.contains("gpt-5.5")
+        || normalized.contains("gpt5.5")
+        || normalized.contains("gpt_5_5")
+        || normalized.contains("5.5")
+    {
+        return ModelPricing {
+            input: 5.00,
+            output: 30.00,
+            cache_read: 0.50,
+        };
+    }
+
     // GPT-5.4 Pro (premium tier)
     if normalized.contains("5.4-pro") || normalized.contains("5_4_pro") {
         return ModelPricing {
             input: 30.00,
             output: 180.00,
             cache_read: 3.00,
+        };
+    }
+
+    // GPT-5.4 Mini
+    if normalized.contains("5.4-mini") || normalized.contains("5_4_mini") {
+        return ModelPricing {
+            input: 0.75,
+            output: 4.50,
+            cache_read: 0.075,
+        };
+    }
+
+    // GPT-5.4 Nano
+    if normalized.contains("5.4-nano") || normalized.contains("5_4_nano") {
+        return ModelPricing {
+            input: 0.20,
+            output: 1.25,
+            cache_read: 0.02,
         };
     }
 
@@ -115,8 +164,11 @@ fn get_codex_pricing(model: &str) -> ModelPricing {
     }
 
     // GPT-5.4 (latest flagship - March 2026)
-    if normalized.contains("gpt-5.4") || normalized.contains("gpt5.4")
-        || normalized.contains("gpt_5_4") || normalized.contains("5.4") {
+    if normalized.contains("gpt-5.4")
+        || normalized.contains("gpt5.4")
+        || normalized.contains("gpt_5_4")
+        || normalized.contains("5.4")
+    {
         return ModelPricing {
             input: 2.50,
             output: 15.00,
@@ -134,8 +186,11 @@ fn get_codex_pricing(model: &str) -> ModelPricing {
     }
 
     // GPT-5.3 Codex (latest - February 2026)
-    if normalized.contains("5.3-codex") || normalized.contains("5_3_codex")
-        || normalized.contains("gpt-5.3") || normalized.contains("gpt5.3") {
+    if normalized.contains("5.3-codex")
+        || normalized.contains("5_3_codex")
+        || normalized.contains("gpt-5.3")
+        || normalized.contains("gpt5.3")
+    {
         return ModelPricing {
             input: 2.00,
             output: 16.00,
@@ -211,11 +266,11 @@ fn get_codex_pricing(model: &str) -> ModelPricing {
         };
     }
 
-    // Default to gpt-5.4 pricing
+    // Default to gpt-5.5 pricing
     ModelPricing {
-        input: 2.50,
-        output: 15.00,
-        cache_read: 0.25,
+        input: 5.00,
+        output: 30.00,
+        cache_read: 0.50,
     }
 }
 
@@ -322,8 +377,7 @@ fn parse_session_for_usage(path: &PathBuf) -> Option<CodexSessionUsage> {
                             if let Some(input) = info.get("input_tokens").and_then(|v| v.as_u64()) {
                                 total_input_tokens += input;
                             }
-                            if let Some(output) =
-                                info.get("output_tokens").and_then(|v| v.as_u64())
+                            if let Some(output) = info.get("output_tokens").and_then(|v| v.as_u64())
                             {
                                 total_output_tokens += output;
                             }
@@ -341,16 +395,22 @@ fn parse_session_for_usage(path: &PathBuf) -> Option<CodexSessionUsage> {
                 // Extract usage from event_msg token_count events (current CLI format)
                 if event_type == "event_msg" {
                     let payload_obj = event["payload"].as_object();
-                    let payload_type = payload_obj.and_then(|p| p.get("type")).and_then(|v| v.as_str());
+                    let payload_type = payload_obj
+                        .and_then(|p| p.get("type"))
+                        .and_then(|v| v.as_str());
                     if payload_type == Some("token_count") {
-                        if let Some(info) = payload_obj.and_then(|p| p.get("info")).and_then(|v| v.as_object()) {
-                            let get_cached = |usage: &serde_json::Map<String, serde_json::Value>| {
-                                usage
-                                    .get("cached_input_tokens")
-                                    .or_else(|| usage.get("cached_tokens"))
-                                    .and_then(|v| v.as_u64())
-                                    .unwrap_or(0)
-                            };
+                        if let Some(info) = payload_obj
+                            .and_then(|p| p.get("info"))
+                            .and_then(|v| v.as_object())
+                        {
+                            let get_cached =
+                                |usage: &serde_json::Map<String, serde_json::Value>| {
+                                    usage
+                                        .get("cached_input_tokens")
+                                        .or_else(|| usage.get("cached_tokens"))
+                                        .and_then(|v| v.as_u64())
+                                        .unwrap_or(0)
+                                };
 
                             if let Some(last_usage) =
                                 info.get("last_token_usage").and_then(|v| v.as_object())
@@ -442,7 +502,12 @@ fn parse_session_for_usage(path: &PathBuf) -> Option<CodexSessionUsage> {
         .map(|dt| dt.timestamp() as u64)
         .unwrap_or(created_at);
 
-    let total_cost = calculate_cost(&model, total_input_tokens, total_output_tokens, total_cached_tokens);
+    let total_cost = calculate_cost(
+        &model,
+        total_input_tokens,
+        total_output_tokens,
+        total_cached_tokens,
+    );
 
     Some(CodexSessionUsage {
         session_id,
@@ -522,29 +587,29 @@ pub async fn get_codex_usage_stats(
     let all_sessions = collect_all_sessions();
 
     // Filter by date range if provided
-    let filtered_sessions: Vec<CodexSessionUsage> = if let (Some(start), Some(end)) =
-        (&start_date, &end_date)
-    {
-        let start_naive = NaiveDate::parse_from_str(start, "%Y-%m-%d")
-            .map_err(|e| format!("Invalid start date: {}", e))?;
-        let end_naive = NaiveDate::parse_from_str(end, "%Y-%m-%d")
-            .map_err(|e| format!("Invalid end date: {}", e))?;
+    let filtered_sessions: Vec<CodexSessionUsage> =
+        if let (Some(start), Some(end)) = (&start_date, &end_date) {
+            let start_naive = NaiveDate::parse_from_str(start, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid start date: {}", e))?;
+            let end_naive = NaiveDate::parse_from_str(end, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid end date: {}", e))?;
 
-        all_sessions
-            .into_iter()
-            .filter(|s| {
-                let session_date = chrono::NaiveDateTime::from_timestamp_opt(s.created_at as i64, 0)
-                    .map(|dt| dt.date());
-                if let Some(date) = session_date {
-                    date >= start_naive && date <= end_naive
-                } else {
-                    false
-                }
-            })
-            .collect()
-    } else {
-        all_sessions
-    };
+            all_sessions
+                .into_iter()
+                .filter(|s| {
+                    let session_date =
+                        chrono::NaiveDateTime::from_timestamp_opt(s.created_at as i64, 0)
+                            .map(|dt| dt.date());
+                    if let Some(date) = session_date {
+                        date >= start_naive && date <= end_naive
+                    } else {
+                        false
+                    }
+                })
+                .collect()
+        } else {
+            all_sessions
+        };
 
     // Aggregate statistics
     let mut total_cost = 0.0;
@@ -611,16 +676,17 @@ pub async fn get_codex_usage_stats(
             .map(|dt| dt.format("%Y-%m-%dT%H:%M:%S").to_string())
             .unwrap_or_else(|| "unknown".to_string());
 
-        let project_stat = project_stats
-            .entry(session.project_path.clone())
-            .or_insert(CodexProjectUsage {
-                project_path: session.project_path.clone(),
-                project_name,
-                total_cost: 0.0,
-                total_tokens: 0,
-                session_count: 0,
-                last_used: last_used.clone(),
-            });
+        let project_stat =
+            project_stats
+                .entry(session.project_path.clone())
+                .or_insert(CodexProjectUsage {
+                    project_path: session.project_path.clone(),
+                    project_name,
+                    total_cost: 0.0,
+                    total_tokens: 0,
+                    session_count: 0,
+                    last_used: last_used.clone(),
+                });
         project_stat.total_cost += session.total_cost;
         project_stat.total_tokens += session.input_tokens + session.output_tokens;
         project_stat.session_count += 1;

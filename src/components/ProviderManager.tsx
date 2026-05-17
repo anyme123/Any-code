@@ -567,6 +567,54 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
                     </p>
                   </div>
                 )}
+                {currentConfig.anthropic_small_fast_model && (
+                  <div>
+                    <p className="font-medium text-sm">ANTHROPIC_SMALL_FAST_MODEL</p>
+                    <p className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                      {currentConfig.anthropic_small_fast_model}
+                    </p>
+                  </div>
+                )}
+                {currentConfig.anthropic_default_opus_model && (
+                  <div>
+                    <p className="font-medium text-sm">ANTHROPIC_DEFAULT_OPUS_MODEL</p>
+                    <p className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                      {currentConfig.anthropic_default_opus_model}
+                    </p>
+                  </div>
+                )}
+                {currentConfig.anthropic_default_sonnet_model && (
+                  <div>
+                    <p className="font-medium text-sm">ANTHROPIC_DEFAULT_SONNET_MODEL</p>
+                    <p className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                      {currentConfig.anthropic_default_sonnet_model}
+                    </p>
+                  </div>
+                )}
+                {currentConfig.anthropic_custom_model_option && (
+                  <div>
+                    <p className="font-medium text-sm">ANTHROPIC_CUSTOM_MODEL_OPTION</p>
+                    <p className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                      {currentConfig.anthropic_custom_model_option}
+                    </p>
+                  </div>
+                )}
+                {currentConfig.api_timeout_ms && (
+                  <div>
+                    <p className="font-medium text-sm">API_TIMEOUT_MS</p>
+                    <p className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                      {currentConfig.api_timeout_ms}
+                    </p>
+                  </div>
+                )}
+                {currentConfig.claude_code_disable_nonessential_traffic && (
+                  <div>
+                    <p className="font-medium text-sm">CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</p>
+                    <p className="text-sm text-muted-foreground font-mono bg-muted p-2 rounded">
+                      {currentConfig.claude_code_disable_nonessential_traffic}
+                    </p>
+                  </div>
+                )}
 
                 {currentConfig.anthropic_api_key_helper && (
                   <div>
