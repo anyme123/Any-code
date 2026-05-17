@@ -51,15 +51,25 @@
     "process:allow-restart",
     "process:allow-exit",
     "clipboard-manager:allow-write-text",
+    "clipboard-manager:allow-read-text",
     "updater:default",
     {
       "identifier": "http:default",
       "allow": [
         {
+          "url": "https://*"
+        },
+        {
           "url": "https://*:*"
         },
         {
-          "url": "http://*:*"
+          "url": "http://127.0.0.1:*"
+        },
+        {
+          "url": "http://localhost:*"
+        },
+        {
+          "url": "http://[::1]:*"
         }
       ]
     }

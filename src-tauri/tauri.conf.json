@@ -4,7 +4,8 @@
   "version": "5.28.5",
   "identifier": "claude.workbench.app",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run validate && npm run build",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../dist"
   },
@@ -24,11 +25,11 @@
     ],
     "withGlobalTauri": true,
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost http://asset.localhost tauri: blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; connect-src 'self' ipc: https://ipc.localhost https://* http://*",
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost http://asset.localhost tauri: blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; connect-src 'self' ipc: asset: https://ipc.localhost http://ipc.localhost http://127.0.0.1:* ws://127.0.0.1:* https: wss:; font-src 'self' data:; media-src 'self' data: blob:; worker-src 'self' blob:",
       "assetProtocol": {
         "enable": true,
         "scope": [
-          "**"
+          "**/*"
         ]
       },
       "capabilities": [

@@ -5,9 +5,16 @@
   "license": "AGPL-3.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/ensure-dev-port.mjs && vite",
     "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "doctor": "node scripts/doctor.mjs",
+    "doctor:strict": "node scripts/doctor.mjs --strict",
+    "ensure:dev-port": "node scripts/ensure-dev-port.mjs",
+    "check:large-files": "node scripts/check-large-files.mjs --mode warn",
+    "check:large-files:gate": "node scripts/check-large-files.mjs --mode fail --threshold 5000",
+    "validate": "npm run typecheck && npm run check:large-files:gate",
     "tauri": "tauri",
     "tauri:build": "pwsh -File build.ps1",
     "tauri:build-ci": "tauri build",
@@ -15,7 +22,6 @@
     "tauri:dev": "tauri dev"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "@anthropic-ai/sdk": "^0.68.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
