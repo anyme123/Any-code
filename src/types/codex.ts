@@ -128,7 +128,7 @@ export type CodexItem =
 /**
  * Codex execution mode
  */
-export type CodexExecutionMode = 'read-only' | 'full-auto' | 'danger-full-access';
+export type CodexExecutionMode = 'read-only' | 'default' | 'full-auto' | 'danger-full-access';
 
 /**
  * Codex execution options
