@@ -8,7 +8,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { HelpCircle, Send, XCircle, CheckCircle } from "lucide-react";
+import { HelpCircle, Send, XCircle, CheckCircle, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -120,8 +120,8 @@ export function AskUserQuestionDialog({
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-              <HelpCircle className="h-5 w-5 text-blue-500" />
+            <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center">
+              <HelpCircle className="h-5 w-5 text-info" />
             </div>
             <div>
               <DialogTitle className="text-lg">Claude 正在询问你</DialogTitle>
@@ -224,7 +224,7 @@ export function AskUserQuestionDialog({
                                   <div
                                     className={cn(
                                       "text-sm font-medium mb-0.5",
-                                      isSelected ? "text-green-700 dark:text-green-300" : "text-foreground"
+                                      isSelected ? "text-success" : "text-foreground"
                                     )}
                                   >
                                     {option.label}
@@ -234,7 +234,7 @@ export function AskUserQuestionDialog({
                                       className={cn(
                                         "text-xs",
                                         isSelected
-                                          ? "text-green-600 dark:text-green-400"
+                                          ? "text-success"
                                           : "text-muted-foreground"
                                       )}
                                     >
@@ -250,7 +250,7 @@ export function AskUserQuestionDialog({
                         {/* 多选提示 */}
                         {q.multiSelect && (
                           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                            <span className="text-blue-500">ℹ️</span>
+                            <Info className="h-4 w-4 text-info" />
                             <span>可以选择多个选项</span>
                           </div>
                         )}

@@ -153,13 +153,13 @@ export const AIMessage: React.FC<AIMessageProps> = ({
   return (
     <div className={cn("relative group", className)}>
       <MessageBubble variant="assistant">
-        <div className="flex gap-4 items-start">
+        <div className="flex gap-3 items-start">
           {/* Left Column: Avatar with Tooltip */}
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex-shrink-0 mt-0.5 select-none cursor-default">
-                  <div className="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-muted/50 transition-colors">
+                <div className="flex-shrink-0 select-none cursor-default">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-elevated)] text-primary transition-colors hover:bg-accent">
                     <Icon className={cn(isGeminiMessage || isCodexMessage ? "w-4 h-4" : "w-5 h-5")} />
                   </div>
                 </div>
@@ -179,14 +179,14 @@ export const AIMessage: React.FC<AIMessageProps> = ({
           {/* Right Column: Content */}
           <div className="flex-1 min-w-0 space-y-1 relative">
             {/* Actions Toolbar - Visible on Hover */}
-            <div className="absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+            <div className="absolute -top-1 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10">
               <MessageActions content={text || thinkingContent} />
             </div>
 
             {/* Main Content */}
             <div className="space-y-3">
               {text && (
-                <div className="prose prose-neutral dark:prose-invert max-w-none leading-relaxed text-[15px] break-words" style={{ overflowWrap: 'anywhere' }}>
+                <div className="prose prose-neutral dark:prose-invert max-w-none break-words" style={{ overflowWrap: 'anywhere' }}>
                   <MessageContent
                     content={text}
                     isStreaming={enableTypewriter && !hasTools && !hasThinking}

@@ -1026,7 +1026,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
   }
 
   return (
-    <div className={cn("flex h-full bg-background", className)}>
+    <div className={cn("flex h-full bg-transparent", className)}>
       {/* Main Content Area - 重构布局：使用 Flexbox 实现消息区域与输入区域的完全分离 */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 消息展示区域容器 - flex-1 占据剩余空间，min-h-0 防止 flex 子元素溢出 */}
@@ -1078,7 +1078,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
 
               {isLoading && messages.length === 0 && (
                 <div className="flex items-center justify-center h-full">
-                  <div className="flex items-center gap-3">
+                  <div className="command-surface flex items-center gap-3 px-4 py-3">
                     <div className="rotating-symbol text-primary" />
                     <span className="text-sm text-muted-foreground">
                       {session ? t('claudeSession.loadingHistory') : t('claudeSession.initializingClaude')}
@@ -1096,12 +1096,12 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center gap-1 bg-background/60 backdrop-blur-md border border-border/50 rounded-xl px-1.5 py-2 cursor-pointer hover:bg-accent/80 shadow-sm"
+                        className="flex flex-col items-center gap-1 rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--glass-bg)] px-1.5 py-2 shadow-sm backdrop-blur-md cursor-pointer hover:bg-accent"
                         onClick={() => setShowPromptNavigator(true)}
                         title={t('claudeSession.promptNav')}
                       >
                         <List className="h-4 w-4" />
-                        <div className="flex flex-col items-center text-[10px] leading-tight tracking-wider">
+                        <div className="flex flex-col items-center text-[10px] leading-tight tracking-normal">
                           <span>{t('session.promptChar1')}</span>
                           <span>{t('session.promptChar2')}</span>
                           <span>{t('session.promptChar3')}</span>
@@ -1116,7 +1116,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                           initial={{ opacity: 0, y: 20, scale: 0.8 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                          className="flex flex-col items-center gap-1 bg-background/60 backdrop-blur-md border border-border/50 rounded-xl px-1.5 py-2 cursor-pointer hover:bg-accent/80 shadow-sm"
+                          className="flex flex-col items-center gap-1 rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--glass-bg)] px-1.5 py-2 shadow-sm backdrop-blur-md cursor-pointer hover:bg-accent"
                           onClick={() => {
                             setUserScrolled(false);
                             setShouldAutoScroll(true);
@@ -1125,8 +1125,8 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                           }}
                           title={t('claudeSession.newMessage')}
                         >
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                          <div className="flex flex-col items-center text-[10px] leading-tight tracking-wider">
+                          <div className="w-1.5 h-1.5 bg-info rounded-full animate-pulse" />
+                          <div className="flex flex-col items-center text-[10px] leading-tight tracking-normal">
                             <span>{t('session.newChar1')}</span>
                             <span>{t('session.newChar2')}</span>
                             <span>{t('session.newChar3')}</span>
@@ -1137,7 +1137,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                     </AnimatePresence>
 
                     {/* Traditional scroll controls */}
-                    <div className="flex flex-col bg-background/60 backdrop-blur-md border border-border/50 rounded-xl overflow-hidden shadow-sm">
+                    <div className="flex flex-col overflow-hidden rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--glass-bg)] shadow-sm backdrop-blur-md">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1151,7 +1151,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                             });
                           }
                         }}
-                        className="px-1.5 py-1.5 hover:bg-accent/80 rounded-none h-auto min-h-0"
+                        className="px-1.5 py-1.5 hover:bg-accent rounded-none h-auto min-h-0"
                         title={t('claudeSession.scrollToTop')}
                       >
                         <ChevronUp className="h-3.5 w-3.5" />
@@ -1166,7 +1166,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                           // 使用虚拟列表的 scrollToBottom，解决消息过多时滚动不到底的问题
                           sessionMessagesRef.current?.scrollToBottom();
                         }}
-                        className="px-1.5 py-1.5 hover:bg-accent/80 rounded-none h-auto min-h-0"
+                        className="px-1.5 py-1.5 hover:bg-accent rounded-none h-auto min-h-0"
                         title={t('claudeSession.scrollToBottom')}
                       >
                         <ChevronDown className="h-3.5 w-3.5" />
@@ -1189,7 +1189,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
               exit={{ opacity: 0, y: 20 }}
               className="flex-shrink-0 w-full max-w-3xl mx-auto px-4 pb-2"
             >
-              <div className="floating-element backdrop-enhanced rounded-lg p-3 space-y-2">
+              <div className="floating-element backdrop-enhanced rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-medium text-muted-foreground mb-1">
                     {t('session.queuedPrompts', { count: queuedPrompts.length })}
@@ -1205,7 +1205,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ delay: index * 0.05 }}
-                    className="flex items-start gap-2 bg-muted/50 rounded-md p-2"
+                    className="flex items-start gap-2 rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-muted)] p-2"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">

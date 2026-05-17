@@ -41,12 +41,12 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
         <div
           className={cn(
             "flex items-center justify-center w-6 h-6 rounded-full",
-            isUser ? "bg-primary/10" : "bg-blue-500/10"
+            isUser ? "bg-primary/10" : "bg-[var(--surface-panel)] border border-[var(--surface-hairline-soft)]"
           )}
         >
           <Icon className={cn(
             "w-4 h-4",
-            isUser ? "text-primary" : "text-blue-500"
+            isUser ? "text-primary" : "text-info"
           )} />
         </div>
       )}

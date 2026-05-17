@@ -242,7 +242,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     return (
     <div className="space-y-4">
       <div className="flex justify-end mb-2">
-        <div className="flex items-center bg-muted/50 rounded-lg p-1">
+        <div className="flex items-center rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel)] p-1">
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             size="icon-sm"
@@ -292,10 +292,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 }
               }}
               className={cn(
-                "w-full text-left rounded-xl border transition-all duration-300 group cursor-pointer relative overflow-hidden",
-                "bg-card hover:bg-gradient-to-br hover:from-card hover:to-muted/30",
-                "border-border/40 hover:border-primary/30",
-                "shadow-sm hover:shadow-lg hover:shadow-primary/5",
+                "w-full text-left rounded-xl border transition-colors duration-150 group cursor-pointer relative overflow-hidden",
+                "bg-card hover:bg-[var(--surface-panel-elevated)]",
+                "border-[var(--surface-hairline-soft)] hover:border-primary/35",
+                "shadow-sm",
                 viewMode === "grid" ? "p-5" : "px-4 py-3 flex items-center gap-4"
               )}
               aria-label={t('projectList.projectLabel', { projectName, sessionCount, createdAt: formatAbsoluteDateTime(project.created_at) })}
@@ -303,20 +303,19 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               {/* 主要信息区：项目图标 + 项目名称 */}
               <div className={cn("flex items-start gap-4", viewMode === "grid" ? "mb-3" : "flex-1 items-center mb-0")}>
                 <div className={cn(
-                  "flex items-center justify-center rounded-xl transition-colors duration-300",
-                  "bg-gradient-to-br from-primary/10 to-primary/5 text-primary group-hover:from-primary/20 group-hover:to-primary/10",
+                  "flex items-center justify-center rounded-xl border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel)] text-primary transition-colors duration-150 group-hover:bg-primary/10",
                   viewMode === "grid" ? "w-12 h-12" : "w-10 h-10 shrink-0"
                 )}>
-                  <FolderOpen className={cn("transition-transform duration-300 group-hover:scale-110", viewMode === "grid" ? "h-6 w-6" : "h-5 w-5")} aria-hidden="true" />
+                  <FolderOpen className={cn(viewMode === "grid" ? "h-6 w-6" : "h-5 w-5")} aria-hidden="true" />
                 </div>
                 
                 <div className={cn("min-w-0 flex flex-col justify-center", viewMode === "grid" ? "flex-1 pr-16" : "flex-1")}>
-                  <h3 className="font-semibold text-base truncate text-foreground group-hover:text-primary transition-colors tracking-tight">
+                  <h3 className="font-semibold text-base truncate text-foreground group-hover:text-primary transition-colors tracking-normal">
                     {projectName}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
                     <p className={cn(
-                      "text-xs text-muted-foreground/80 truncate font-mono bg-muted/50 px-1.5 py-0.5 rounded",
+                      "text-xs text-muted-foreground/80 truncate font-mono bg-[var(--surface-code)] border border-[var(--surface-hairline-soft)] px-1.5 py-0.5 rounded",
                       viewMode === "grid" ? "max-w-full" : "max-w-[200px]"
                     )}>
                       {viewMode === "grid" ? project.path : project.path}
@@ -327,9 +326,9 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
               {/* 底部信息 (仅网格视图) */}
               {viewMode === "grid" && (
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-[var(--surface-hairline-soft)]">
                    <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                     <span className="w-1.5 h-1.5 rounded-full bg-green-500/50"></span>
+                     <span className="w-1.5 h-1.5 rounded-full bg-success/60"></span>
                      {formatAbsoluteDateTime(project.created_at)}
                    </div>
                 </div>
@@ -355,7 +354,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                         <div
                           className={cn(
                             "flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-default transition-all duration-300 border",
-                            "bg-primary/5 text-primary border-primary/10 group-hover:bg-primary/10 group-hover:border-primary/20"
+                            "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary/15"
                           )}
                           aria-label={t('projectList.sessionCountAria', { count: sessionCount })}
                           onClick={(e) => e.stopPropagation()}

@@ -224,16 +224,16 @@ export const TabManager: React.FC<TabManagerProps> = ({
 
   return (
     <TooltipProvider>
-      <div className={cn("h-full flex flex-col bg-background", className)}>
+      <div className={cn("h-full flex flex-col bg-transparent", className)}>
         {/* 🎨 极简标签页栏 */}
-        <div className="flex-shrink-0 border-b border-border bg-background">
+        <div className="flex-shrink-0 border-b border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-muted)]">
           <div className="flex items-center h-12 px-4 gap-2">
             {/* 返回按钮 */}
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               onClick={onBack}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-200 hover:shadow-md border-0"
+              className="bg-[var(--surface-panel)]"
             >
               <ArrowLeft className="h-4 w-4 mr-1.5" />
               <span>{t('tabs.back')}</span>
@@ -263,8 +263,8 @@ export const TabManager: React.FC<TabManagerProps> = ({
                           "group relative flex items-center gap-2 px-3 py-1.5 rounded-lg min-w-[100px] max-w-[200px] flex-shrink-0 cursor-pointer",
                           "transition-colors",
                           tab.isActive
-                            ? "bg-muted border border-border text-foreground"
-                            : "bg-transparent border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                            ? "bg-[var(--surface-panel-elevated)] border border-[var(--surface-hairline)] text-foreground shadow-sm"
+                            : "bg-transparent border border-transparent text-muted-foreground hover:text-foreground hover:bg-accent",
                           draggedTab === tab.id && "ring-2 ring-primary",
                           dragOverIndex === index && draggedTab !== tab.id && "border-primary"
                         )}
@@ -411,7 +411,7 @@ export const TabManager: React.FC<TabManagerProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    className="flex-shrink-0 h-7 w-7 rounded flex items-center justify-center hover:bg-muted transition-colors"
+                    className="flex-shrink-0 h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent transition-colors"
                     onClick={() => createNewTab()}
                   >
                     <Plus className="h-4 w-4" />
@@ -427,7 +427,7 @@ export const TabManager: React.FC<TabManagerProps> = ({
             {/* 标签页菜单 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted transition-colors">
+                <button className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
@@ -492,7 +492,7 @@ export const TabManager: React.FC<TabManagerProps> = ({
               transition={{ duration: 0.3 }}
               className="flex items-center justify-center h-full"
             >
-              <div className="text-center max-w-md px-8">
+              <div className="app-workbench-surface max-w-md rounded-xl px-8 py-9 text-center shadow-sm">
                 {/* 图标 */}
                 <motion.div
                   initial={{ y: -20 }}
@@ -505,8 +505,8 @@ export const TabManager: React.FC<TabManagerProps> = ({
                   }}
                   className="mb-6"
                 >
-                  <div className="inline-flex p-6 rounded-2xl bg-muted/50 border border-border/50">
-                    <MessageSquare className="h-16 w-16 text-muted-foreground/70" strokeWidth={1.5} />
+                  <div className="inline-flex rounded-xl border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-elevated)] p-5">
+                    <MessageSquare className="h-12 w-12 text-primary" strokeWidth={1.5} />
                   </div>
                 </motion.div>
 
@@ -535,7 +535,7 @@ export const TabManager: React.FC<TabManagerProps> = ({
                   <Button
                     size="lg"
                     onClick={() => createNewTab()}
-                    className="w-full shadow-md hover:shadow-lg"
+                    className="w-full"
                   >
                     <Plus className="h-5 w-5 mr-2" />
                     {t('tabs.createNewSession')}

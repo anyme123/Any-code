@@ -29,13 +29,13 @@ export const SessionHeader: React.FC<SessionHeaderProps> = ({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="p-6 border-b border-border flex-shrink min-h-0 overflow-y-auto bg-muted/20"
+      className="flex-shrink min-h-0 overflow-y-auto border-b border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-muted)] p-6"
     >
       {/* Header section */}
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="mx-auto max-w-3xl space-y-4">
         {!projectPath && (
-          <div className="text-center mb-6">
-            <FolderOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+          <div className="app-workbench-surface mb-6 rounded-xl p-6 text-center">
+            <FolderOpen className="h-10 w-10 mx-auto mb-3 text-primary" />
             <h3 className="text-lg font-semibold mb-2">{t('sessionHeader.selectProjectDirectory')}</h3>
             <p className="text-sm text-muted-foreground">
               {t('sessionHeader.selectProjectPrompt')}
@@ -81,7 +81,7 @@ export const SessionHeader: React.FC<SessionHeaderProps> = ({
                 <Button
                   key={project.id}
                   variant="outline"
-                  className="justify-start h-auto py-3 px-4"
+                  className="justify-start h-auto py-3 px-4 bg-[var(--surface-panel)]"
                   onClick={() => {
                     setProjectPath(project.path);
                   }}

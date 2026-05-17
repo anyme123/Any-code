@@ -214,7 +214,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             onOpenChange={setShowCostPopover}
             trigger={
               <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 h-8 cursor-default hover:bg-accent transition-colors border-border/50">
-                <DollarSign className="h-3 w-3 text-green-600 dark:text-green-400" />
+                <DollarSign className="h-3 w-3 text-success" />
                 <span className="font-mono text-xs">{sessionCost}</span>
                 <Info className="h-3 w-3 text-muted-foreground ml-1" />
               </Badge>
@@ -376,7 +376,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
           variant="destructive"
           size="default"
           disabled={disabled}
-          className="h-8 shadow-md bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium"
+          className="h-8 font-medium"
         >
           {t('buttons.cancel')}
         </Button>
@@ -385,7 +385,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
           onClick={onSend}
           disabled={(!prompt.trim() && !hasAttachments) || disabled}
           size="default"
-          className="h-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-200"
+          className="h-8"
         >
           {t('promptInput.send')}
         </Button>

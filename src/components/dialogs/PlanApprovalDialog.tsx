@@ -76,8 +76,8 @@ export function PlanApprovalDialog({
       <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-blue-500" />
+            <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-info" />
             </div>
             <div>
               <DialogTitle className="text-lg">计划已完成</DialogTitle>
@@ -90,8 +90,8 @@ export function PlanApprovalDialog({
 
         {/* 计划统计 */}
         {planStats && planStats.steps > 0 && (
-          <div className="flex items-center gap-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-            <ListChecks className="h-5 w-5 text-blue-500 flex-shrink-0" />
+          <div className="flex items-center gap-4 p-3 rounded-lg bg-info/5 border border-info/20">
+            <ListChecks className="h-5 w-5 text-info flex-shrink-0" />
             <div className="flex-1 flex items-center gap-4 text-xs">
               <div>
                 <span className="text-muted-foreground">步骤数：</span>

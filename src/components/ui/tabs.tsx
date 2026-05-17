@@ -30,7 +30,7 @@ export interface TabsProps {
 
 /**
  * Root tabs component
- * 
+ *
  * @example
  * <Tabs value={activeTab} onValueChange={setActiveTab}>
  *   <TabsList>
@@ -65,11 +65,11 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     <div
       ref={ref}
       className={cn(
-        "flex h-9 items-center justify-start rounded-lg p-1",
+        "flex h-9 items-center justify-start rounded-lg border border-[var(--surface-hairline-soft)] p-1",
         className
       )}
       style={{
-        backgroundColor: "var(--color-muted)",
+        backgroundColor: "var(--surface-panel)",
         color: "var(--color-muted-foreground)"
       }}
       {...props}
@@ -105,15 +105,15 @@ const TabsTrigger = React.forwardRef<
       disabled={disabled}
       onClick={() => onValueChange(value)}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all duration-200",
+        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors duration-150",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "disabled:pointer-events-none disabled:opacity-50",
         className
       )}
       style={{
-        backgroundColor: isSelected ? "var(--color-background)" : "transparent",
+        backgroundColor: isSelected ? "var(--surface-panel-elevated)" : "transparent",
         color: isSelected ? "var(--color-foreground)" : "inherit",
-        boxShadow: isSelected ? "0 1px 2px rgba(0,0,0,0.1)" : "none"
+        boxShadow: isSelected ? "var(--shadow-xs)" : "none"
       }}
       {...props}
     />
@@ -155,4 +155,4 @@ const TabsContent = React.forwardRef<
 
 TabsContent.displayName = "TabsContent";
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }; 
+export { Tabs, TabsList, TabsTrigger, TabsContent };

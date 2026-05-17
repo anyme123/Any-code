@@ -67,9 +67,9 @@ const ColoredProgressBar: React.FC<{
       <div
         className={cn(
           "h-full transition-all duration-300",
-          variant === "destructive" && "bg-red-500",
-          variant === "warning" && "bg-amber-500",
-          variant === "success" && "bg-emerald-500"
+          variant === "destructive" && "bg-destructive",
+          variant === "warning" && "bg-warning",
+          variant === "success" && "bg-success"
         )}
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
       />
@@ -97,9 +97,9 @@ const RateLimitProgress: React.FC<{
         </div>
         <span className={cn(
           "font-mono font-medium",
-          variant === "destructive" && "text-red-500",
-          variant === "warning" && "text-amber-500",
-          variant === "success" && "text-emerald-500"
+          variant === "destructive" && "text-destructive",
+          variant === "warning" && "text-warning",
+          variant === "success" && "text-success"
         )}>
           {limit.usedPercent.toFixed(1)}%
         </span>

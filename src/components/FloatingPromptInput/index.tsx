@@ -663,7 +663,7 @@ const FloatingPromptInputInner = (
 
       {/* ✅ 重构布局: 输入区域不再使用 fixed 定位，作为 Flex 容器的一部分 */}
       <div className={cn(
-        "flex-shrink-0 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] shadow-[var(--glass-shadow)]",
+        "composer-shell flex-shrink-0 backdrop-blur-[var(--glass-blur)]",
         className
       )}>
         <AttachmentPreview
@@ -671,10 +671,10 @@ const FloatingPromptInputInner = (
           embeddedImages={embeddedImages}
           onRemoveAttachment={handleRemoveImageAttachment}
           onRemoveEmbedded={handleRemoveEmbeddedImage}
-          className="border-b border-border/50 p-4"
+          className="mx-auto max-w-4xl border-b border-[var(--surface-hairline-soft)] p-3"
         />
 
-        <div className="p-4 space-y-2">
+        <div className="mx-auto max-w-4xl space-y-2 px-4 py-3">
           <InputArea
             ref={textareaRef}
             prompt={state.prompt}

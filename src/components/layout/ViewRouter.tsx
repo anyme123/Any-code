@@ -304,11 +304,11 @@ export const ViewRouter: React.FC = () => {
       case "projects":
         return (
           <div className="flex-1 overflow-y-auto">
-            <div className="container mx-auto p-6">
+            <div className="mx-auto w-full max-w-7xl p-6">
               {!selectedProject && (
-                <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="app-workbench-surface mb-6 flex items-start justify-between gap-4 rounded-xl p-5">
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-3xl font-bold tracking-tight">{t('common.ccProjectsTitle')}</h1>
+                    <h1 className="text-2xl font-semibold tracking-normal text-[var(--text-strong)]">{t('common.ccProjectsTitle')}</h1>
                     <p className="text-sm text-muted-foreground mt-1">
                       {t('common.browseClaudeSessions')}
                     </p>
@@ -316,7 +316,7 @@ export const ViewRouter: React.FC = () => {
                   <Button
                     onClick={() => navigateTo("claude-tab-manager", { initialProjectPath: "__NEW_PROJECT__" })}
                     size="default"
-                    className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-200 hover:shadow-md"
+                    className="flex-shrink-0"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     {t('common.newProject')}
@@ -333,7 +333,7 @@ export const ViewRouter: React.FC = () => {
               {loading && (
                 <>
                   {selectedProject ? (
-                    <div className="border border-border rounded-lg overflow-hidden divide-y divide-border">
+                    <div className="overflow-hidden rounded-xl border border-[var(--surface-hairline-soft)] divide-y divide-[var(--surface-hairline-soft)]">
                       {[...Array(8)].map((_, i) => (
                         <SessionListItemSkeleton key={i} />
                       ))}
@@ -400,7 +400,7 @@ export const ViewRouter: React.FC = () => {
                           loading={loading}
                         />
                       ) : (
-                        <div className="py-8 text-center">
+                        <div className="app-workbench-surface rounded-xl py-8 text-center">
                           <p className="text-sm text-muted-foreground">
                             {t('common.noProjectsFound')}
                           </p>

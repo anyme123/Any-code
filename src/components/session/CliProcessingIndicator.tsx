@@ -92,10 +92,9 @@ export const CliProcessingIndicator: React.FC<CliProcessingIndicatorProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[85%] mx-auto px-4 py-3"
+          className="w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[86%] mx-auto px-4 py-3"
         >
-          <div className="flex items-center gap-2 font-mono text-sm">
-            {/* 星号指示器 - 带脉冲动画 */}
+          <div className="command-surface flex items-center gap-2 px-3 py-2 font-mono text-sm shadow-sm">
             <motion.span
               animate={{
                 opacity: [1, 0.4, 1],
@@ -106,10 +105,8 @@ export const CliProcessingIndicator: React.FC<CliProcessingIndicatorProps> = ({
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
-              className="text-amber-500 dark:text-amber-400 font-bold"
-            >
-              ✦
-            </motion.span>
+              className="h-2 w-2 rounded-full bg-primary"
+            />
 
             {/* 动态处理文本 */}
             <span className="text-foreground/90">
@@ -119,7 +116,7 @@ export const CliProcessingIndicator: React.FC<CliProcessingIndicatorProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 5 }}
                 transition={{ duration: 0.2 }}
-                className="text-amber-600 dark:text-amber-400 font-medium"
+                className="text-primary font-medium"
               >
                 {currentVerb}
               </motion.span>
@@ -134,7 +131,7 @@ export const CliProcessingIndicator: React.FC<CliProcessingIndicatorProps> = ({
               {onCancel && (
                 <button
                   onClick={onCancel}
-                  className="hover:text-red-500 transition-colors cursor-pointer"
+                  className="hover:text-destructive transition-colors cursor-pointer"
                 >
                   {t('cliIndicator.escToCancel', 'esc to cancel')}
                 </button>
@@ -144,7 +141,7 @@ export const CliProcessingIndicator: React.FC<CliProcessingIndicatorProps> = ({
                 <motion.span
                   animate={{ opacity: [0.4, 1, 0.4] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
-                  className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500/70"
+                  className="inline-block w-1.5 h-1.5 rounded-full bg-primary/70"
                 />
                 {t('cliIndicator.thinking', 'thinking')}
               </span>
@@ -153,11 +150,9 @@ export const CliProcessingIndicator: React.FC<CliProcessingIndicatorProps> = ({
           </div>
 
           {/* 底部进度条动画 */}
-          <motion.div
-            className="mt-2 h-[2px] bg-muted-foreground/10 rounded-full overflow-hidden"
-          >
+          <motion.div className="mt-2 h-[2px] bg-muted-foreground/10 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-amber-500/50 via-amber-400 to-amber-500/50"
+              className="h-full bg-primary/80"
               animate={{
                 x: ["-100%", "100%"],
               }}

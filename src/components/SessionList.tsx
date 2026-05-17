@@ -70,7 +70,7 @@ type SessionFilter = 'all' | 'claude' | 'codex' | 'gemini';
 
 /**
  * SessionList component - Displays paginated sessions for a specific project
- * 
+ *
  * @example
  * <SessionList
  *   sessions={sessions}
@@ -322,14 +322,14 @@ export const SessionList: React.FC<SessionListProps> = ({
   return (
     <div className={cn("space-y-4", className)}>
       {/* 🎯 重构后的布局：项目信息 + Edit CLAUDE.md 按钮在同一行 */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="app-workbench-surface flex items-center justify-between gap-4 rounded-xl p-4">
         {/* 左侧：返回按钮 + 项目信息 */}
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           <Button
-            variant="default"
+            variant="outline"
             size="default"
             onClick={onBack}
-            className="h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-200 hover:shadow-md flex-shrink-0"
+            className="h-10 px-4 flex-shrink-0 bg-[var(--surface-panel)]"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             <span>{t('sessionList.backToProjects')}</span>
@@ -408,7 +408,7 @@ export const SessionList: React.FC<SessionListProps> = ({
       </Tabs>
 
       {/* 🎯 新布局：批量管理会话 + 新建会话按钮在同一行 */}
-      <div className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg border border-border">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-muted)] p-3">
         {/* 左侧：批量管理会话 */}
         <div className="flex items-center gap-2 flex-1">
           {onSessionsBatchDelete && validSessions.length > 0 && (
@@ -475,7 +475,6 @@ export const SessionList: React.FC<SessionListProps> = ({
             <Button
               onClick={() => onNewSession(projectPath)}
               size="sm"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-200"
             >
               <Plus className="mr-2 h-4 w-4" />
               {t('claude.newSession')}
@@ -486,7 +485,7 @@ export const SessionList: React.FC<SessionListProps> = ({
 
       {/* Compact session list */}
       <div
-        className="border border-border rounded-lg overflow-hidden divide-y divide-border"
+        className="overflow-hidden rounded-xl border border-[var(--surface-hairline-soft)] divide-y divide-[var(--surface-hairline-soft)] bg-[var(--surface-panel)]"
         role="list"
         aria-label={t('sessionList.sessionListLabel')}
         aria-live="polite"
@@ -508,7 +507,7 @@ export const SessionList: React.FC<SessionListProps> = ({
               key={uniqueKey}
               role="listitem"
               className={cn(
-                "relative flex items-center group hover:bg-muted/30 transition-colors",
+                "relative flex items-center group hover:bg-accent/50 transition-colors",
                 session.todo_data && "bg-primary/5 border-l-2 border-l-primary",
                 isSelectionMode && selectedSessions.has(session.id) && "bg-primary/10"
               )}
@@ -545,12 +544,12 @@ export const SessionList: React.FC<SessionListProps> = ({
                     </p>
                     {/* 🆕 Engine type badge */}
                     {session.engine === 'codex' ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-info/10 text-info border border-info/20 shrink-0">
                         <Bot className="h-3 w-3" />
                         Codex
                       </span>
                     ) : session.engine === 'gemini' ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20 shrink-0">
                         <Sparkles className="h-3 w-3" />
                         Gemini
                       </span>
@@ -686,7 +685,7 @@ export const SessionList: React.FC<SessionListProps> = ({
                 <div className="p-3 bg-muted rounded-md">
                   <div className="flex items-center gap-2 mb-2">
                     {sessionToConvert.engine === 'codex' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-info/10 text-info border border-info/20">
                         <Bot className="h-3 w-3" />
                         Codex
                       </span>
@@ -703,7 +702,7 @@ export const SessionList: React.FC<SessionListProps> = ({
                         Claude
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-info/10 text-info border border-info/20">
                         <Bot className="h-3 w-3" />
                         Codex
                       </span>
@@ -719,8 +718,8 @@ export const SessionList: React.FC<SessionListProps> = ({
                   </p>
                 </div>
               )}
-              <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-md">
-                <p className="text-sm text-blue-600 dark:text-blue-400">
+              <div className="p-3 bg-info/5 border border-info/20 rounded-md">
+                <p className="text-sm text-info">
                   ℹ️ {t('sessionList.convertNotes')}
                 </p>
                 <ul className="text-xs text-muted-foreground mt-2 space-y-1 list-disc list-inside">
@@ -762,4 +761,4 @@ export const SessionList: React.FC<SessionListProps> = ({
       </Dialog>
     </div>
   );
-}; 
+};

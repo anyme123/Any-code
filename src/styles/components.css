@@ -2,16 +2,16 @@
    🧩 COMPONENT STYLES
    ======================================== */
 
-/* Markdown Editor Dark Mode Styles - Medium Gray */
+/* Markdown Editor Dark Mode Styles */
 [data-color-mode="dark"] {
-  --color-border-default: rgb(75, 75, 80);
-  --color-canvas-default: rgb(48, 48, 52);
-  --color-canvas-subtle: rgb(58, 58, 62);
-  --color-fg-default: rgb(225, 225, 230);
-  --color-fg-muted: rgb(145, 145, 152);
-  --color-fg-subtle: rgb(115, 115, 122);
-  --color-accent-fg: rgb(88, 166, 255);
-  --color-danger-fg: rgb(248, 81, 73);
+  --color-border-default: color-mix(in srgb, var(--surface-hairline) 90%, transparent);
+  --color-canvas-default: var(--surface-panel);
+  --color-canvas-subtle: var(--surface-panel-muted);
+  --color-fg-default: var(--color-foreground);
+  --color-fg-muted: var(--text-soft);
+  --color-fg-subtle: var(--text-faint);
+  --color-accent-fg: var(--color-primary);
+  --color-danger-fg: var(--color-destructive);
 }
 
 .w-md-editor {
@@ -85,7 +85,7 @@ html * {
 
 /* Show scrollbar on hover */
 html *:hover {
-  scrollbar-color: var(--color-muted-foreground) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 /* Webkit Scrollbar Styling (Chrome, Edge, Safari) */
@@ -107,12 +107,12 @@ html *::-webkit-scrollbar-thumb {
 }
 
 html *:hover::-webkit-scrollbar-thumb {
-  background-color: var(--color-muted-foreground);
+  background-color: var(--scrollbar-thumb);
   opacity: 0.5;
 }
 
 html *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-foreground); /* Darker on direct hover */
+  background-color: var(--scrollbar-thumb-hover);
   opacity: 0.8;
 }
 
@@ -140,7 +140,7 @@ pre:hover::-webkit-scrollbar-thumb,
 .w-md-editor-content:hover::-webkit-scrollbar-thumb,
 code:hover::-webkit-scrollbar-thumb,
 .overflow-auto:hover::-webkit-scrollbar-thumb {
-  background-color: var(--color-muted-foreground);
+  background-color: var(--scrollbar-thumb);
   opacity: 0.5;
 }
 
@@ -160,7 +160,7 @@ code:hover::-webkit-scrollbar-thumb,
 }
 
 .bg-zinc-950:hover ::-webkit-scrollbar-thumb {
-  background-color: var(--color-muted-foreground);
+  background-color: var(--scrollbar-thumb);
   opacity: 0.5;
 }
 
@@ -216,11 +216,11 @@ code:hover::-webkit-scrollbar-thumb,
 }
 
 .light *:hover {
-  scrollbar-color: var(--color-muted-foreground) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 .light *:hover::-webkit-scrollbar-thumb {
-  background-color: var(--color-muted-foreground);
+  background-color: var(--scrollbar-thumb);
 }
 
 .light .bg-zinc-950 ::-webkit-scrollbar-track {
@@ -243,11 +243,83 @@ code:hover::-webkit-scrollbar-thumb,
 }
 
 .floating-input-container {
-  /* Enhanced backdrop and positioning */
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border-top: 1px solid var(--color-border);
-  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  border-top: 1px solid var(--surface-hairline-soft);
+  box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.18);
+}
+
+.app-workbench-root {
+  background:
+    linear-gradient(180deg, var(--surface-canvas) 0%, var(--color-background) 100%);
+}
+
+.app-workbench-sidebar {
+  background: color-mix(in srgb, var(--surface-sidebar) 94%, transparent);
+  border-right: 1px solid var(--surface-hairline-soft);
+  box-shadow: inset -1px 0 0 color-mix(in srgb, white 5%, transparent);
+}
+
+.app-workbench-main {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-canvas) 96%, var(--surface-panel) 4%) 0%,
+      var(--color-background) 100%
+    );
+}
+
+.app-workbench-surface {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-panel) 92%, transparent),
+      var(--surface-panel-muted)
+    );
+  border: 1px solid var(--surface-hairline-soft);
+}
+
+.message-scroll-surface {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-panel-muted) 40%, transparent) 0%,
+      transparent 22%
+    );
+}
+
+.message-rail {
+  border-left: 1px solid var(--surface-hairline-soft);
+}
+
+.assistant-message-surface {
+  background: color-mix(in srgb, var(--surface-assistant) 88%, transparent);
+  border: 1px solid var(--surface-hairline-soft);
+  border-radius: var(--radius-xl);
+}
+
+.user-message-surface {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-user) 94%, var(--color-primary) 6%),
+      var(--surface-user)
+    );
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--surface-hairline));
+  border-radius: var(--radius-xl);
+  color: color-mix(in srgb, white 92%, var(--color-primary) 8%);
+}
+
+.composer-shell {
+  background: color-mix(in srgb, var(--glass-bg) 92%, var(--surface-panel) 8%);
+  border-top: 1px solid var(--surface-hairline);
+  box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.22);
+}
+
+.command-surface {
+  background: var(--surface-code);
+  border: 1px solid var(--surface-hairline-soft);
+  border-radius: var(--radius-lg);
 }
 
 /* Responsive layout adjustments */
@@ -293,126 +365,126 @@ code:hover::-webkit-scrollbar-thumb,
 
 /* Fix potential transparency issues */
 .backdrop-enhanced {
-  backdrop-filter: blur(12px) saturate(180%) brightness(1.1);
-  -webkit-backdrop-filter: blur(12px) saturate(180%) brightness(1.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
 }
 
 /* Ensure floating elements are always visible */
 .floating-element {
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background-color: var(--surface-panel-elevated);
+  border: 1px solid var(--surface-hairline-soft);
+  box-shadow: var(--shadow-md);
 }
 
-/* Dark theme specific enhancements - Medium Gray */
+/* Dark theme specific enhancements */
 .dark .floating-element {
-  background-color: oklch(0.23 0.003 260 / 0.95);
-  backdrop-filter: blur(12px) saturate(180%);
+  background-color: color-mix(in srgb, var(--surface-panel) 95%, transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
 }
 
 /* Dark theme specific backdrop and transparency fixes */
 .dark .bg-background\/95 {
-  background-color: oklch(0.23 0.003 260 / 0.95) !important;
-  backdrop-filter: blur(12px) saturate(180%);
+  background-color: color-mix(in srgb, var(--color-background) 95%, transparent) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
 }
 
 .dark .bg-background\/80 {
-  background-color: oklch(0.23 0.003 260 / 0.80) !important;
-  backdrop-filter: blur(8px) saturate(150%);
+  background-color: color-mix(in srgb, var(--color-background) 80%, transparent) !important;
+  backdrop-filter: blur(10px) saturate(130%);
 }
 
 /* Improve floating input contrast in dark theme */
 .dark .floating-input-container {
-  background-color: oklch(0.23 0.003 260 / 0.95) !important;
-  border-top-color: oklch(0.36 0.005 260) !important;
-  box-shadow: 0 -8px 16px -4px rgba(0, 0, 0, 0.28), 0 -4px 8px -2px rgba(0, 0, 0, 0.18) !important;
+  background-color: color-mix(in srgb, var(--surface-panel) 94%, transparent) !important;
+  border-top-color: var(--surface-hairline) !important;
+  box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.28) !important;
 }
 
 /* Better text contrast on dark backgrounds */
 .dark .text-muted-foreground {
-  color: oklch(0.60 0.005 260) !important;
+  color: var(--color-muted-foreground) !important;
 }
 
 /* Improve card contrast in dark theme */
 .dark .bg-card {
-  background-color: oklch(0.27 0.004 260) !important;
-  border-color: oklch(0.36 0.005 260) !important;
+  background-color: var(--color-card) !important;
+  border-color: var(--surface-hairline-soft) !important;
 }
 
 /* Better popover contrast in dark theme */
 .dark .bg-popover {
-  background-color: oklch(0.25 0.003 260) !important;
-  border-color: oklch(0.36 0.005 260) !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.20) !important;
+  background-color: var(--color-popover) !important;
+  border-color: var(--surface-hairline-soft) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 /* Enhanced border visibility in dark theme */
 .dark .border-border\/50 {
-  border-color: oklch(0.42 0.006 260 / 0.5) !important;
+  border-color: var(--surface-hairline-soft) !important;
 }
 
 /* Better shadow for dark theme */
 .dark .shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -2px rgba(0, 0, 0, 0.30) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .dark .shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.50), 0 10px 10px -5px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: var(--shadow-xl) !important;
 }
 
 /* Light theme specific enhancements */
 .light .floating-element {
-  background-color: oklch(0.99 0.002 240 / 0.98);
-  backdrop-filter: blur(12px) saturate(180%) brightness(1.05);
-  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.08);
+  background-color: color-mix(in srgb, var(--surface-panel-elevated) 96%, transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(125%);
+  box-shadow: var(--shadow-md);
 }
 
 /* Light theme specific styles */
 .light .bg-background\/95 {
-  background-color: oklch(0.99 0.005 240 / 0.98) !important;
-  backdrop-filter: blur(12px) saturate(180%);
+  background-color: color-mix(in srgb, var(--color-background) 95%, transparent) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(125%);
 }
 
 .light .bg-background\/80 {
-  background-color: oklch(0.99 0.005 240 / 0.92) !important;
-  backdrop-filter: blur(8px) saturate(150%);
+  background-color: color-mix(in srgb, var(--color-background) 80%, transparent) !important;
+  backdrop-filter: blur(10px) saturate(120%);
 }
 
 /* Improve floating elements contrast */
 .light .border-border\/50 {
-  border-color: oklch(0.80 0.005 240 / 0.8) !important;
+  border-color: var(--surface-hairline-soft) !important;
 }
 
 /* Enhanced shadow for better separation */
 .light .shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .light .shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: var(--shadow-xl) !important;
 }
 
 /* Improve floating input contrast in light theme */
 .light .floating-input-container {
-  background-color: oklch(0.99 0.005 240 / 0.98) !important;
-  border-top-color: oklch(0.80 0.005 240) !important;
-  box-shadow: 0 -8px 16px -4px rgba(0, 0, 0, 0.12), 0 -4px 8px -2px rgba(0, 0, 0, 0.08) !important;
+  background-color: color-mix(in srgb, var(--surface-panel-elevated) 96%, transparent) !important;
+  border-top-color: var(--surface-hairline) !important;
+  box-shadow: 0 -18px 40px rgba(70, 48, 28, 0.12) !important;
 }
 
 /* Better text contrast on light backgrounds */
 .light .text-muted-foreground {
-  color: oklch(0.45 0.01 240) !important;
+  color: var(--color-muted-foreground) !important;
 }
 
 /* Improve card contrast */
 .light .bg-card {
-  background-color: oklch(0.98 0.005 240) !important;
-  border-color: oklch(0.82 0.005 240) !important;
+  background-color: var(--color-card) !important;
+  border-color: var(--surface-hairline-soft) !important;
 }
 
 /* Better popover contrast */
 .light .bg-popover {
-  background-color: oklch(0.99 0.005 240) !important;
-  border-color: oklch(0.82 0.005 240) !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08) !important;
+  background-color: var(--color-popover) !important;
+  border-color: var(--surface-hairline-soft) !important;
+  box-shadow: var(--shadow-lg) !important;
 }

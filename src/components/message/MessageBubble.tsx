@@ -32,28 +32,26 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      initial={{ opacity: 0, y: 10, scale: 0.995 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
-        duration: 0.3,
+        duration: 0.18,
         ease: [0.2, 0, 0, 1] // Emphasized easing
       }}
       className={cn(
-        "flex w-full mb-2", // Reduced spacing for compact layout
+        "flex w-full mb-3",
         isUser ? "justify-end" : "justify-start",
         className
       )}
     >
       {isUser ? (
         // User Message: Modern Bubble
-        <div className="flex flex-col items-end max-w-[85%] sm:max-w-[70%]">
+        <div className="flex flex-col items-end max-w-[88%] sm:max-w-[72%]">
           <div className="flex items-center gap-1.5 justify-end w-full">
             {sideContent}
             <div
               className={cn(
-                "rounded-[20px] px-5 py-2.5", // More rounded, slightly tighter padding
-                "bg-secondary text-secondary-foreground", // Use semantic colors
-                "border border-border/50 shadow-sm", // Add subtle border and shadow
+                "user-message-surface px-4 py-2.5 shadow-sm",
                 "break-words text-[15px] leading-relaxed overflow-hidden",
                 bubbleClassName
               )}
@@ -64,11 +62,11 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
           </div>
         </div>
       ) : (
-        // AI Message: Clean Document Style (No Card)
+        // AI Message: readable workbench card
         <div className="flex flex-col w-full max-w-full overflow-hidden">
           <div
             className={cn(
-              "w-full pr-4 overflow-hidden", // No border, no background, just spacing
+              "assistant-message-surface w-full overflow-hidden px-4 py-3",
               bubbleClassName
             )}
             style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}

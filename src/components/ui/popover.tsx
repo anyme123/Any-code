@@ -35,7 +35,7 @@ interface PopoverProps {
 
 /**
  * Popover component for displaying floating content
- * 
+ *
  * @example
  * <Popover
  *   trigger={<Button>Click me</Button>}
@@ -55,28 +55,28 @@ export const Popover: React.FC<PopoverProps> = ({
   const [internalOpen, setInternalOpen] = React.useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
-  
+
   const triggerRef = React.useRef<HTMLDivElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
-  
+
   // Close on click outside
   React.useEffect(() => {
     if (!open) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      
+
       // Check if click is inside trigger or content
       if (triggerRef.current?.contains(target) || contentRef.current?.contains(target)) {
         return;
       }
-      
+
       // Check if click is inside a Radix Portal (e.g., Select dropdown)
       const radixPortal = target.closest('[data-radix-popper-content-wrapper], [data-radix-select-viewport], [role="listbox"], [data-radix-portal]');
       if (radixPortal) {
         return;
       }
-      
+
       // Check for radix-related attributes in parent chain
       let element: HTMLElement | null = target;
       while (element && element !== document.body) {
@@ -85,28 +85,28 @@ export const Popover: React.FC<PopoverProps> = ({
         }
         element = element.parentElement;
       }
-      
+
       setOpen(false);
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, setOpen]);
-  
+
   // Close on escape
   React.useEffect(() => {
     if (!open) return;
-    
+
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
       }
     };
-    
+
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [open, setOpen]);
-  
+
   // 水平方向（left/right）时使用垂直对齐
   const isHorizontal = side === "left" || side === "right";
 
@@ -142,7 +142,7 @@ export const Popover: React.FC<PopoverProps> = ({
     }
   };
   const animation = getAnimation();
-  
+
   return (
     <div className="relative inline-block">
       <div
@@ -151,7 +151,7 @@ export const Popover: React.FC<PopoverProps> = ({
       >
         {trigger}
       </div>
-      
+
       <AnimatePresence>
         {open && (
           <motion.div
@@ -161,7 +161,7 @@ export const Popover: React.FC<PopoverProps> = ({
             exit={{ opacity: 0, scale: 0.95, ...animation?.exit }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "absolute z-50 min-w-[200px] rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-md",
+              "absolute z-50 min-w-[200px] rounded-lg border border-[var(--surface-hairline-soft)] bg-popover p-4 text-popover-foreground shadow-lg",
               sideClass,
               alignClass,
               className
@@ -173,4 +173,4 @@ export const Popover: React.FC<PopoverProps> = ({
       </AnimatePresence>
     </div>
   );
-}; 
+};

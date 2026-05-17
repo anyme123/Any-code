@@ -149,32 +149,32 @@ export const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
   }
 
   return (
-    <div className={cn('tool-calls-group my-2 border border-border rounded-lg overflow-hidden', className)}>
+    <div className={cn('tool-calls-group command-surface my-2 overflow-hidden', className)}>
       {/* 折叠/展开头部 */}
       <button
         onClick={toggleCollapse}
-        className="flex items-center gap-2 w-full px-4 py-3 text-left bg-muted/30 hover:bg-muted/50 transition-colors"
+        className="flex items-center gap-2 w-full px-4 py-3 text-left hover:bg-accent/50 transition-colors"
       >
         {isCollapsed ? <ChevronRight className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
-        <Wrench className="w-4 h-4 text-blue-500 shrink-0" />
+        <Wrench className="w-4 h-4 text-primary shrink-0" />
         <span className="font-medium text-sm">{t('tools.toolCalls', { count: stats.total })}</span>
 
         {/* 状态徽章 */}
         <div className="flex items-center gap-2 ml-auto">
           {stats.successCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded">
+            <span className="flex items-center gap-1 text-xs text-success bg-success/10 px-2 py-1 rounded">
               <CheckCircle className="w-3 h-3" />
               {stats.successCount}
             </span>
           )}
           {stats.errorCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-red-600 bg-red-500/10 px-2 py-1 rounded">
+            <span className="flex items-center gap-1 text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
               <AlertCircle className="w-3 h-3" />
               {stats.errorCount}
             </span>
           )}
           {stats.pendingCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-500/10 px-2 py-1 rounded">
+            <span className="flex items-center gap-1 text-xs text-info bg-info/10 px-2 py-1 rounded">
               <Loader2 className="w-3 h-3 animate-spin" />
               {stats.pendingCount}
             </span>
@@ -191,7 +191,7 @@ export const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
           getStatusById={getStatusById}
         />
       ) : (
-        <div className="space-y-2 p-4 bg-background">
+        <div className="space-y-2 border-t border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-muted)] p-4">
           {/* 如果有 task 工具，先渲染聚合任务列表 */}
           {taskAggregateData && (
             <TaskListAggregateWidget toolCalls={taskAggregateData} />
@@ -233,15 +233,15 @@ const CollapsedSummary: React.FC<CollapsedSummaryProps> = ({ toolCalls, getStatu
         const isError = status === 'error';
 
         let StatusIcon = Loader2;
-        let statusColor = 'text-blue-600';
+        let statusColor = 'text-info';
 
         if (hasResult) {
           if (isError) {
             StatusIcon = AlertCircle;
-            statusColor = 'text-red-600';
+            statusColor = 'text-destructive';
           } else {
             StatusIcon = CheckCircle;
-            statusColor = 'text-green-600';
+            statusColor = 'text-success';
           }
         }
 
@@ -305,23 +305,23 @@ const SingleToolCallComponent: React.FC<SingleToolCallProps> = ({ tool, result, 
   const isError = status === 'error';
 
   let StatusIcon = Loader2;
-  let statusColor = 'text-blue-600';
-  let statusBg = 'bg-blue-500/10';
+  let statusColor = 'text-info';
+  let statusBg = 'bg-info/10';
 
   if (hasResult) {
     if (isError) {
       StatusIcon = AlertCircle;
-      statusColor = 'text-red-600';
-      statusBg = 'bg-red-500/10';
+      statusColor = 'text-destructive';
+      statusBg = 'bg-destructive/10';
     } else {
       StatusIcon = CheckCircle;
-      statusColor = 'text-green-600';
-      statusBg = 'bg-green-500/10';
+      statusColor = 'text-success';
+      statusBg = 'bg-success/10';
     }
   }
 
   return (
-    <div className={cn('tool-call-item my-2', renderer ? '' : 'bg-card border rounded-lg p-3 border-border')}>
+    <div className={cn('tool-call-item my-2', renderer ? '' : 'command-surface p-3')}>
       {/* 工具头部 - 仅在没有专用渲染器时显示 */}
       {!renderer && (
         <div className="flex items-center justify-between mb-2">
@@ -465,7 +465,7 @@ const FallbackToolRender: React.FC<FallbackToolRenderProps> = ({ tool, result })
       )}
 
       {result && (
-        <div className={cn('p-2 rounded relative', result.is_error ? 'bg-red-500/10' : 'bg-muted')}>
+        <div className={cn('relative rounded-lg border border-[var(--surface-hairline-soft)] p-2', result.is_error ? 'bg-destructive/10' : 'bg-[var(--surface-code)]')}>
           <div className="font-medium mb-1 text-xs">{result.is_error ? t('tools.executionFailed') : t('tools.executionResult')}:</div>
           <div className="relative">
             <pre

@@ -328,8 +328,7 @@ export const MessageImagePreview: React.FC<MessageImagePreviewProps> = ({
       {compact ? (
         <div className={cn(
           "inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg",
-          "bg-gradient-to-br from-slate-100/90 to-slate-200/90 dark:from-slate-700/90 dark:to-slate-800/90",
-          "border border-slate-200/50 dark:border-slate-600/50 shadow-sm",
+          "bg-[var(--surface-panel)] border border-[var(--surface-hairline-soft)] shadow-sm",
           className
         )}>
           {images.map((image, index) => (
@@ -341,7 +340,7 @@ export const MessageImagePreview: React.FC<MessageImagePreviewProps> = ({
               className="relative group flex-shrink-0"
             >
               <div
-                className="relative rounded overflow-hidden cursor-pointer ring-1 ring-black/10 dark:ring-white/10 hover:ring-blue-400/50 transition-all"
+                className="relative rounded overflow-hidden cursor-pointer ring-1 ring-black/10 dark:ring-white/10 hover:ring-primary/50 transition-all"
                 style={{ width: compactSize, height: compactSize }}
                 onClick={() => setSelectedIndex(index)}
               >

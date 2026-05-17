@@ -4,8 +4,8 @@
 
 :root, .dark {
   /* 🔤 Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Microsoft YaHei", "微软雅黑", "SimSun", "宋体", "Arial Unicode MS", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, "Microsoft YaHei Mono", "微软雅黑", monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, "Microsoft YaHei Mono", monospace;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -19,9 +19,9 @@
 /* Prose styles for markdown rendering */
 .prose {
   color: var(--color-foreground);
-  max-width: 65ch;
-  font-size: 1rem;
-  line-height: 1.75;
+  max-width: 72ch;
+  font-size: 0.9375rem;
+  line-height: 1.68;
 }
 
 .prose-sm {
@@ -30,8 +30,8 @@
 }
 
 .prose p {
-  margin-top: 1.25em;
-  margin-bottom: 1.25em;
+  margin-top: 0.85em;
+  margin-bottom: 0.85em;
 }
 
 .prose-sm p {
@@ -47,22 +47,24 @@
 }
 
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-  margin-top: 0;
-  margin-bottom: 0.8888889em;
+  margin-top: 1.2em;
+  margin-bottom: 0.65em;
   font-weight: 600;
-  line-height: 1.1111111;
+  line-height: 1.24;
+  letter-spacing: 0;
+  color: var(--text-strong);
 }
 
 .prose h1 {
-  font-size: 2.25em;
+  font-size: 1.6em;
 }
 
 .prose h2 {
-  font-size: 1.5em;
+  font-size: 1.32em;
 }
 
 .prose h3 {
-  font-size: 1.25em;
+  font-size: 1.12em;
 }
 
 .prose h4 {
@@ -71,8 +73,12 @@
 
 .prose a {
   color: var(--color-primary);
-  text-decoration: underline;
+  text-decoration: none;
   font-weight: 500;
+}
+
+.prose a:hover {
+  text-decoration: underline;
 }
 
 .prose strong {
@@ -80,14 +86,14 @@
 }
 
 .prose ol, .prose ul {
-  margin-top: 1.25em;
-  margin-bottom: 1.25em;
+  margin-top: 0.85em;
+  margin-bottom: 0.85em;
   padding-left: 1.625em;
 }
 
 .prose li {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+  margin-top: 0.32em;
+  margin-bottom: 0.32em;
 }
 
 .prose > ul > li p {
@@ -102,7 +108,8 @@
 .prose code {
   font-weight: 600;
   font-size: 0.875em;
-  background-color: var(--color-muted);
+  background-color: var(--surface-code);
+  border: 1px solid var(--surface-hairline-soft);
   padding: 0.125em 0.375em;
   border-radius: 0.25rem;
 }
@@ -110,12 +117,13 @@
 .prose pre {
   overflow-x: auto;
   font-size: 0.875em;
-  line-height: 1.714;
-  margin-top: 1.714em;
-  margin-bottom: 1.714em;
-  border-radius: 0.375rem;
-  padding: 0.857em 1.143em;
-  background-color: var(--color-card);
+  line-height: 1.65;
+  margin-top: 1.15em;
+  margin-bottom: 1.15em;
+  border-radius: var(--radius-lg);
+  padding: 1em 1.1em;
+  background-color: var(--surface-code);
+  border: 1px solid var(--surface-hairline-soft);
 }
 
 .prose pre code {
@@ -131,12 +139,13 @@
 }
 
 .prose blockquote {
-  font-weight: 500;
-  font-style: italic;
-  margin-top: 1.6em;
-  margin-bottom: 1.6em;
+  font-weight: 400;
+  font-style: normal;
+  margin-top: 1.2em;
+  margin-bottom: 1.2em;
   padding-left: 1em;
-  border-left: 0.25rem solid var(--color-border);
+  color: var(--text-soft);
+  border-left: 0.2rem solid var(--color-primary);
 }
 
 .prose hr {
@@ -201,8 +210,8 @@
 }
 
 .dark .prose pre {
-  background-color: rgb(13, 17, 23);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-code);
+  border: 1px solid var(--surface-hairline-soft);
 }
 
 .dark .prose thead {
@@ -224,13 +233,13 @@
 }
 
 .light .prose code {
-  background-color: var(--color-muted);
+  background-color: var(--surface-code);
   color: var(--color-foreground);
 }
 
 .light .prose pre {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
+  background-color: var(--surface-code);
+  border: 1px solid var(--surface-hairline-soft);
 }
 
 .light .prose blockquote {
@@ -249,74 +258,7 @@
   border-bottom-color: var(--color-border);
 }
 
-/* --- DPI and Resolution Scaling Support --- */
-
-/* High DPI (Retina) displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  /* Increase font sizes slightly for better readability on high DPI displays */
-  body {
-    font-size: 14px;
-    line-height: 1.6;
-  }
-}
-
-/* Very high DPI displays (300dpi+) */
-@media (-webkit-min-device-pixel-ratio: 3), (min-resolution: 288dpi) {
-  body {
-    font-size: 15px;
-    line-height: 1.65;
-  }
-  
-  .text-xs { font-size: 0.8rem; }
-  .text-sm { font-size: 0.9rem; }
-  .text-base { font-size: 1rem; }
-  .text-lg { font-size: 1.15rem; }
-}
-
-/* Windows DPI scaling support */
-@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
-  /* Windows specific DPI adjustments */
-  body {
-    zoom: 1; /* Reset zoom to prevent double scaling */
-  }
-}
-
-/* Support for Windows Display Scale Settings */
-@media (min-resolution: 144dpi) {
-  /* 150% scaling */
-  .text-xs { font-size: 0.8rem; }
-  .text-sm { font-size: 0.9rem; }
-}
-
-@media (min-resolution: 192dpi) {
-  /* 200% scaling */
-  .text-xs { font-size: 0.85rem; }
-  .text-sm { font-size: 0.95rem; }
-}
-
-@media (min-resolution: 288dpi) {
-  /* 300% scaling */
-  .text-xs { font-size: 0.9rem; }
-  .text-sm { font-size: 1rem; }
-}
-
-/* Ultra-wide and large displays */
-@media (min-width: 1920px) {
-  /* Larger displays can handle slightly larger base font sizes */
-  body {
-    font-size: 15px;
-  }
-  
-  .text-xs { font-size: 0.8rem; }
-  .text-sm { font-size: 0.9rem; }
-}
-
-@media (min-width: 2560px) {
-  /* 4K and above */
-  body {
-    font-size: 16px;
-  }
-  
-  .text-xs { font-size: 0.85rem; }
-  .text-sm { font-size: 0.95rem; }
+body {
+  font-size: 14px;
+  line-height: 1.55;
 }

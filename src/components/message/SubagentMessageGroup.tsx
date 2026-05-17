@@ -73,10 +73,10 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
   return (
     <div className={cn("relative my-2", className)}>
       {/* 子代理组容器 - Modern Clean Style */}
-      <div className="rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
+      <div className="command-surface overflow-hidden">
 
         {/* Task 工具调用（固定显示） */}
-        <div className="border-b border-border/30">
+        <div className="border-b border-[var(--surface-hairline-soft)]">
           <AIMessage
             message={group.taskMessage}
             isStreaming={false}
@@ -87,17 +87,17 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
 
         {/* 折叠控制按钮 - Compact Header */}
         <div 
-          className="px-3 py-2 bg-muted/30 hover:bg-muted/50 border-b border-border/30 cursor-pointer transition-colors select-none flex items-center justify-between group/header"
+          className="px-3 py-2 bg-[var(--surface-panel-muted)] hover:bg-accent/50 border-b border-[var(--surface-hairline-soft)] cursor-pointer transition-colors select-none flex items-center justify-between group/header"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex items-center justify-center w-5 h-5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <div className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-primary">
               <Bot className="h-3.5 w-3.5" />
             </div>
             <span className="text-sm font-medium text-foreground/80 truncate">
               {group.subagentType ? getSubagentTypeLabel(group.subagentType, t) : t('subagent.subagent')}
             </span>
-            <div className="h-3 w-px bg-border/50 mx-1" />
+            <div className="h-3 w-px bg-[var(--surface-hairline-soft)] mx-1" />
             <span className="text-xs text-muted-foreground truncate">
               {t('subagent.executionProcess')}
             </span>
@@ -127,7 +127,7 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="p-2 space-y-2 bg-background/30">
+              <div className="p-2 space-y-2 bg-[var(--surface-panel-muted)]">
                 {/* 渲染子代理消息 */}
                 {subagentMessages.length > 0 ? (
                   subagentMessages.map((message, index) => {
@@ -158,7 +158,7 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
                         <div key={`msg-${index}-${message.timestamp || index}`} className="pl-2 pr-1">
                           {isPromptToSubagent && (
                             <div className="text-[10px] text-muted-foreground mb-1 px-2 flex items-center gap-1 opacity-60">
-                              <span className="uppercase tracking-wider font-medium">Task Input</span>
+                              <span className="uppercase tracking-normal font-medium">Task Input</span>
                             </div>
                           )}
                           <UserMessage

@@ -87,7 +87,7 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
           {textToDisplay}
           {/* 打字中光标 */}
           {isTyping && (
-            <span className="inline-block w-1 h-3 ml-0.5 bg-amber-500 animate-pulse rounded-sm" />
+            <span className="inline-block w-1 h-3 ml-0.5 bg-primary animate-pulse rounded-sm" />
           )}
         </>
       );
@@ -96,16 +96,16 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
     return parts.map((part, index) => (
       <React.Fragment key={index}>
         {index > 0 && (
-          <div className="flex items-center gap-2 my-3 opacity-50 select-none">
-            <div className="h-px bg-amber-500/30 flex-1" />
-            <div className="text-[10px] text-amber-700/50 dark:text-amber-300/50 font-mono">STEP {index + 1}</div>
-            <div className="h-px bg-amber-500/30 flex-1" />
+          <div className="flex items-center gap-2 my-3 opacity-60 select-none">
+            <div className="h-px bg-primary/30 flex-1" />
+            <div className="text-[10px] text-primary/70 font-mono">STEP {index + 1}</div>
+            <div className="h-px bg-primary/30 flex-1" />
           </div>
         )}
         <span>{part.trim()}</span>
         {/* 只在最后一部分且正在打字时显示光标 */}
         {index === parts.length - 1 && isTyping && (
-          <span className="inline-block w-1 h-3 ml-0.5 bg-amber-500 animate-pulse rounded-sm" />
+          <span className="inline-block w-1 h-3 ml-0.5 bg-primary animate-pulse rounded-sm" />
         )}
       </React.Fragment>
     ));
@@ -136,18 +136,18 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
   if (!content) return null;
 
   return (
-    <div className="border-l-2 border-amber-500/30 bg-amber-500/5 rounded-md overflow-hidden my-2">
+    <div className="my-2 overflow-hidden rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--surface-code)]">
       {/* Header - 可点击切换 */}
       <button
         onClick={handleToggle}
-        className="w-full cursor-pointer px-3 py-2 text-xs text-amber-700 dark:text-amber-300 font-medium hover:bg-amber-500/10 transition-colors select-none flex items-center gap-2 outline-none text-left"
+        className="w-full cursor-pointer px-3 py-2 text-xs text-primary font-medium hover:bg-primary/10 transition-colors select-none flex items-center gap-2 outline-none text-left"
       >
         <BrainCircuit className="w-3.5 h-3.5 opacity-70" />
         <span>Thinking Process</span>
 
         {/* 打字中指示器 */}
         {isTyping && (
-          <span className="inline-block w-1.5 h-3 bg-amber-500 animate-pulse rounded-full" />
+          <span className="inline-block w-1.5 h-3 bg-primary animate-pulse rounded-full" />
         )}
 
         <span className="ml-auto flex items-center gap-2">

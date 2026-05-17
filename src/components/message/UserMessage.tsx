@@ -183,7 +183,7 @@ const formatSkillsMessage = (text: string): React.ReactNode => {
       <div className="space-y-2">
         {commandMessageMatch && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-green-600">✓</span>
+            <span className="text-success">OK</span>
             <span>{commandMessageMatch[1]}</span>
           </div>
         )}
@@ -203,7 +203,7 @@ const formatSkillsMessage = (text: string): React.ReactNode => {
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-green-600">✓</span>
+            <span className="text-success">OK</span>
             <span>Skill</span>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -432,7 +432,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
                 {shouldCollapse && (
                   <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="flex items-center gap-1 text-xs text-primary-foreground/70 hover:text-primary-foreground transition-colors mt-1"
+                  className="flex items-center gap-1 text-xs text-white/70 hover:text-white transition-colors mt-1"
                   >
                     {isExpanded ? (
                       <>
@@ -479,7 +479,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+                      className="h-6 w-6 p-0 rounded-md text-white/45 hover:text-white hover:bg-white/10 transition-all"
                       onClick={handleRevertClick}
                     >
                       <Undo2 className="h-4 w-4" />
@@ -504,7 +504,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex-shrink-0 mt-0.5 select-none cursor-default">
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 dark:bg-indigo-500/20 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 transition-colors">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel-elevated)] text-[var(--text-soft)] transition-colors hover:bg-accent hover:text-foreground">
                   <User className="w-4 h-4" />
                 </div>
               </div>
@@ -576,7 +576,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
                           {t('planMode.conversationOnlyDesc')}
                         </div>
                       </div>
-                      <div className="text-xs text-green-600 font-medium bg-green-50 dark:bg-green-950 px-2 py-1 rounded">
+                      <div className="text-xs text-success font-medium bg-success/10 px-2 py-1 rounded">
                         {t('planMode.alwaysAvailable')}
                       </div>
                     </div>
@@ -601,7 +601,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
                       <div className={cn(
                         "text-xs font-medium px-2 py-1 rounded",
                         capabilities.code
-                          ? "text-green-600 bg-green-50 dark:bg-green-950"
+                          ? "text-success bg-success/10"
                           : "text-muted-foreground bg-muted"
                       )}>
                         {capabilities.code ? t('planMode.available') : t('planMode.unavailable')}
@@ -628,7 +628,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
                       <div className={cn(
                         "text-xs font-medium px-2 py-1 rounded",
                         capabilities.both
-                          ? "text-green-600 bg-green-50 dark:bg-green-950"
+                          ? "text-success bg-success/10"
                           : "text-muted-foreground bg-muted"
                       )}>
                         {capabilities.both ? t('planMode.available') : t('planMode.unavailable')}

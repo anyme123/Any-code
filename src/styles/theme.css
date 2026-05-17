@@ -1,137 +1,170 @@
 /* ========================================
-   🎨 MODERN DESIGN SYSTEM - Material 3 Inspired
+   Workbench Design System
    ======================================== */
 
-/* Default (Dark) theme configuration - Medium Gray */
+/* Default dark theme: developer workbench, hairline-first surfaces. */
 :root,
 .dark {
-  /* 🎨 Primary Colors - Medium gray for comfortable viewing */
-  --color-background: oklch(0.23 0.003 260);
-  --color-foreground: oklch(0.93 0.003 260);
-  --color-card: oklch(0.27 0.004 260);
-  --color-card-foreground: oklch(0.93 0.003 260);
-  --color-popover: oklch(0.25 0.003 260);
-  --color-popover-foreground: oklch(0.93 0.003 260);
+  color-scheme: dark;
 
-  /* 🌟 Brand Colors - Vibrant blue accent */
-  --color-primary: oklch(0.62 0.20 250);
-  --color-primary-hover: oklch(0.67 0.22 250);
-  --color-primary-active: oklch(0.57 0.18 250);
-  --color-primary-foreground: oklch(0.98 0.003 260);
+  --color-background: oklch(0.145 0.012 265);
+  --color-foreground: oklch(0.92 0.006 260);
+  --color-card: oklch(0.185 0.012 265);
+  --color-card-foreground: oklch(0.93 0.006 260);
+  --color-popover: oklch(0.17 0.014 265);
+  --color-popover-foreground: oklch(0.94 0.006 260);
 
-  /* 📦 Secondary Colors */
-  --color-secondary: oklch(0.30 0.004 260);
-  --color-secondary-hover: oklch(0.34 0.005 260);
-  --color-secondary-foreground: oklch(0.92 0.003 260);
+  --color-primary: oklch(0.68 0.125 36);
+  --color-primary-hover: oklch(0.72 0.135 36);
+  --color-primary-active: oklch(0.61 0.135 36);
+  --color-primary-foreground: oklch(0.98 0.006 70);
 
-  /* 🔇 Muted Colors */
-  --color-muted: oklch(0.28 0.003 260);
-  --color-muted-hover: oklch(0.32 0.004 260);
-  --color-muted-foreground: oklch(0.60 0.005 260);
+  --color-secondary: oklch(0.22 0.014 265);
+  --color-secondary-hover: oklch(0.265 0.016 265);
+  --color-secondary-foreground: oklch(0.91 0.006 260);
 
-  /* ✨ Accent Colors */
-  --color-accent: oklch(0.32 0.006 260);
-  --color-accent-hover: oklch(0.36 0.008 260);
-  --color-accent-foreground: oklch(0.93 0.003 260);
+  --color-muted: oklch(0.21 0.012 265);
+  --color-muted-hover: oklch(0.255 0.014 265);
+  --color-muted-foreground: oklch(0.68 0.014 260);
 
-  /* ⚠️ Status Colors */
-  --color-destructive: oklch(0.60 0.22 25);
-  --color-destructive-hover: oklch(0.55 0.25 25);
-  --color-destructive-foreground: oklch(0.98 0.003 260);
+  --color-accent: oklch(0.245 0.017 260);
+  --color-accent-hover: oklch(0.29 0.02 260);
+  --color-accent-foreground: oklch(0.94 0.006 260);
 
-  --color-success: oklch(0.65 0.18 145);
-  --color-success-hover: oklch(0.60 0.20 145);
-  --color-success-foreground: oklch(0.98 0.003 145);
-  --color-warning: oklch(0.72 0.16 75);
-  --color-warning-hover: oklch(0.67 0.18 75);
-  --color-warning-foreground: oklch(0.18 0.02 75);
-  --color-info: oklch(0.62 0.20 250);
-  --color-info-hover: oklch(0.57 0.22 250);
-  --color-info-foreground: oklch(0.98 0.003 250);
+  --color-destructive: oklch(0.64 0.19 24);
+  --color-destructive-hover: oklch(0.58 0.21 24);
+  --color-destructive-foreground: oklch(0.99 0.003 260);
 
-  /* 🎨 UI Elements */
-  --color-border: oklch(0.36 0.005 260);
-  --color-border-hover: oklch(0.42 0.006 260);
-  --color-input: oklch(0.28 0.003 260);
-  --color-ring: oklch(0.50 0.08 260); /* Muted gray-blue for subtle focus indicator */
+  --color-success: oklch(0.72 0.14 158);
+  --color-success-hover: oklch(0.66 0.15 158);
+  --color-success-foreground: oklch(0.12 0.018 158);
+  --color-warning: oklch(0.77 0.15 73);
+  --color-warning-hover: oklch(0.70 0.16 73);
+  --color-warning-foreground: oklch(0.16 0.02 73);
+  --color-info: oklch(0.70 0.12 226);
+  --color-info-hover: oklch(0.63 0.13 226);
+  --color-info-foreground: oklch(0.12 0.018 226);
 
-  /* 🌫️ Glassmorphism Variables (Dark) - Medium Gray */
-  --glass-border: oklch(0.93 0.003 260 / 0.12);
-  --glass-bg: oklch(0.23 0.003 260 / 0.80);
-  --glass-blur: 12px;
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  --color-border: oklch(0.29 0.016 265);
+  --color-border-hover: oklch(0.38 0.02 265);
+  --color-input: oklch(0.18 0.014 265);
+  --color-ring: oklch(0.69 0.12 36);
 
-  /* Additional colors */
-  --color-green-500: oklch(0.68 0.18 142);
-  --color-green-600: oklch(0.60 0.20 142);
+  --surface-canvas: oklch(0.145 0.012 265);
+  --surface-sidebar: oklch(0.12 0.01 265);
+  --surface-panel: oklch(0.17 0.012 265);
+  --surface-panel-elevated: oklch(0.205 0.014 265);
+  --surface-panel-muted: oklch(0.155 0.01 265);
+  --surface-code: oklch(0.115 0.01 265);
+  --surface-user: oklch(0.245 0.056 254);
+  --surface-assistant: oklch(0.16 0.01 265);
+  --surface-hairline: oklch(0.35 0.017 265 / 0.72);
+  --surface-hairline-soft: oklch(0.35 0.017 265 / 0.42);
 
-  /* 📐 Border Radius */
-  --radius-xs: 0.375rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-2xl: 2rem;
+  --text-strong: oklch(0.98 0.003 260);
+  --text-soft: oklch(0.76 0.01 260);
+  --text-faint: oklch(0.56 0.014 260);
+
+  --glass-border: var(--surface-hairline-soft);
+  --glass-bg: oklch(0.16 0.012 265 / 0.92);
+  --glass-blur: 18px;
+  --glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+
+  --scrollbar-thumb: oklch(0.47 0.025 260 / 0.75);
+  --scrollbar-thumb-hover: oklch(0.58 0.03 260 / 0.92);
+
+  --color-green-500: var(--color-success);
+  --color-green-600: var(--color-success-hover);
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
   --radius-full: 9999px;
 
-  /* 🎭 Shadows */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.16);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.20);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.24);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.32);
+  --shadow-xl: 0 28px 70px rgba(0, 0, 0, 0.40);
+  --shadow-2xl: 0 40px 100px rgba(0, 0, 0, 0.50);
 }
 
 /* ========================================
-   🌞 LIGHT THEME - Clean & Modern
+   Light theme: warm canvas for readable project/admin views.
    ======================================== */
 .light {
-  /* 🎨 Primary Colors */
-  --color-background: oklch(0.985 0.002 240); /* Slightly warmer white */
-  --color-foreground: oklch(0.12 0.015 240);
-  --color-card: oklch(1 0 0); /* Pure white cards */
-  --color-card-foreground: oklch(0.12 0.015 240);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.12 0.015 240);
-  
-  /* 🌟 Brand Colors */
-  --color-primary: oklch(0.55 0.24 250);
-  --color-primary-hover: oklch(0.50 0.26 250);
-  --color-primary-active: oklch(0.45 0.22 250);
-  --color-primary-foreground: oklch(1 0 0);
-  
-  /* 📦 Secondary Colors */
-  --color-secondary: oklch(0.96 0.005 240);
-  --color-secondary-hover: oklch(0.92 0.008 240);
-  --color-secondary-foreground: oklch(0.12 0.015 240);
-  
-  /* 🔇 Muted Colors */
-  --color-muted: oklch(0.96 0.005 240);
-  --color-muted-hover: oklch(0.93 0.008 240);
-  --color-muted-foreground: oklch(0.40 0.015 240); /* Increased contrast */
-  
-  /* ✨ Accent Colors */
-  --color-accent: oklch(0.94 0.01 250);
-  --color-accent-hover: oklch(0.91 0.015 250);
-  --color-accent-foreground: oklch(0.12 0.015 240);
-  
-  /* 🎨 UI Elements */
-  --color-border: oklch(0.89 0.005 240);
-  --color-border-hover: oklch(0.80 0.01 240);
-  --color-input: oklch(0.96 0.005 240);
-  --color-ring: oklch(0.55 0.24 250);
+  color-scheme: light;
 
-  /* 🌫️ Glassmorphism Variables (Light) - OPTIMIZED */
-  /* Increased opacity (0.85) and added saturation for cleaner look */
-  --glass-border: oklch(0.12 0.015 240 / 0.06); /* Sharper border */
-  --glass-bg: oklch(1 0 0 / 0.85); /* Higher opacity for better contrast */
-  --glass-blur: 16px; /* Stronger blur */
-  --glass-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --color-background: oklch(0.975 0.012 75);
+  --color-foreground: oklch(0.19 0.012 70);
+  --color-card: oklch(0.995 0.004 75);
+  --color-card-foreground: oklch(0.19 0.012 70);
+  --color-popover: oklch(0.995 0.004 75);
+  --color-popover-foreground: oklch(0.19 0.012 70);
 
-  /* Additional colors */
-  --color-green-500: oklch(0.58 0.20 142);
-  --color-green-600: oklch(0.50 0.22 142);
+  --color-primary: oklch(0.57 0.135 36);
+  --color-primary-hover: oklch(0.52 0.145 36);
+  --color-primary-active: oklch(0.46 0.135 36);
+  --color-primary-foreground: oklch(0.995 0.004 75);
+
+  --color-secondary: oklch(0.935 0.016 75);
+  --color-secondary-hover: oklch(0.90 0.02 75);
+  --color-secondary-foreground: oklch(0.22 0.012 70);
+
+  --color-muted: oklch(0.94 0.014 75);
+  --color-muted-hover: oklch(0.91 0.016 75);
+  --color-muted-foreground: oklch(0.46 0.016 70);
+
+  --color-accent: oklch(0.925 0.018 75);
+  --color-accent-hover: oklch(0.885 0.022 75);
+  --color-accent-foreground: oklch(0.20 0.012 70);
+
+  --color-destructive: oklch(0.56 0.20 24);
+  --color-destructive-hover: oklch(0.50 0.22 24);
+  --color-destructive-foreground: oklch(0.995 0.004 75);
+  --color-success: oklch(0.58 0.16 158);
+  --color-success-hover: oklch(0.50 0.17 158);
+  --color-success-foreground: oklch(0.995 0.004 75);
+  --color-warning: oklch(0.70 0.15 73);
+  --color-warning-hover: oklch(0.63 0.16 73);
+  --color-warning-foreground: oklch(0.19 0.012 70);
+  --color-info: oklch(0.58 0.12 226);
+  --color-info-hover: oklch(0.52 0.13 226);
+  --color-info-foreground: oklch(0.995 0.004 75);
+
+  --color-border: oklch(0.84 0.018 75);
+  --color-border-hover: oklch(0.75 0.022 75);
+  --color-input: oklch(0.96 0.012 75);
+  --color-ring: oklch(0.57 0.135 36);
+
+  --surface-canvas: oklch(0.975 0.012 75);
+  --surface-sidebar: oklch(0.955 0.016 75);
+  --surface-panel: oklch(0.99 0.006 75);
+  --surface-panel-elevated: oklch(1 0 0);
+  --surface-panel-muted: oklch(0.948 0.014 75);
+  --surface-code: oklch(0.94 0.014 75);
+  --surface-user: oklch(0.50 0.12 253);
+  --surface-assistant: oklch(0.985 0.006 75);
+  --surface-hairline: oklch(0.78 0.02 75 / 0.88);
+  --surface-hairline-soft: oklch(0.78 0.02 75 / 0.55);
+
+  --text-strong: oklch(0.13 0.012 70);
+  --text-soft: oklch(0.38 0.014 70);
+  --text-faint: oklch(0.58 0.014 70);
+
+  --glass-border: var(--surface-hairline-soft);
+  --glass-bg: oklch(0.99 0.006 75 / 0.92);
+  --glass-blur: 18px;
+  --glass-shadow: 0 18px 36px rgba(70, 48, 28, 0.12);
+
+  --scrollbar-thumb: oklch(0.65 0.018 75 / 0.78);
+  --scrollbar-thumb-hover: oklch(0.50 0.022 75 / 0.92);
+
+  --color-green-500: oklch(0.58 0.16 158);
+  --color-green-600: oklch(0.50 0.17 158);
 }
 
 /* Base Styles */
@@ -142,9 +175,10 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-family: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Monospace font optimization */

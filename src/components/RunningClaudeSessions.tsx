@@ -119,10 +119,10 @@ export const RunningClaudeSessions: React.FC<RunningClaudeSessionsProps> = ({
   }
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("mb-5 space-y-3", className)}>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-green-500 rounded-full" />
+          <div className="w-2 h-2 bg-success rounded-full" />
           <h3 className="text-sm font-medium">Active Claude Sessions</h3>
         </div>
         <span className="text-xs text-muted-foreground">
@@ -140,20 +140,20 @@ export const RunningClaudeSessions: React.FC<RunningClaudeSessionsProps> = ({
 
           return (
             <div key={session.run_id}>
-              <Card className="transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer">
+              <Card className="cursor-pointer border-[var(--surface-hairline-soft)] bg-[var(--surface-panel)] transition-colors hover:border-primary/35 hover:bg-[var(--surface-panel-elevated)]">
                 <CardContent 
                   className="p-3"
                   onClick={() => handleResumeSession(session)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <Terminal className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <Terminal className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-mono text-xs text-muted-foreground truncate">
                             {sessionId.substring(0, 20)}...
                           </p>
-                          <span className="text-xs text-green-600 font-medium">
+                          <span className="text-xs text-success font-medium">
                             Running
                           </span>
                         </div>

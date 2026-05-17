@@ -91,19 +91,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const buttonContent = (
       <Button
-        variant={isActive ? "secondary" : "ghost"}
+        variant="ghost"
         className={cn(
-          "rounded-xl mb-2 transition-all duration-200",
-          isExpanded ? "w-full justify-start px-3 h-10" : "w-10 h-10",
+          "relative rounded-lg transition-colors duration-150",
+          isExpanded ? "w-full justify-start px-3 h-9" : "w-9 h-9",
           isActive
-            ? "bg-primary/15 text-primary hover:bg-primary/20 shadow-sm"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            ? "bg-primary/10 text-primary hover:bg-primary/15"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent/70"
         )}
         onClick={() => onNavigate(item.view)}
       >
-        <item.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+        {isActive && isExpanded && (
+          <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+        )}
+        <item.icon className="w-4 h-4" strokeWidth={isActive ? 2.4 : 2} />
         {isExpanded && (
-          <span className="ml-3 text-sm font-medium">{item.label}</span>
+          <span className="ml-2.5 min-w-0 truncate text-sm font-medium">{item.label}</span>
         )}
         {!isExpanded && <span className="sr-only">{item.label}</span>}
       </Button>
@@ -134,17 +137,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col py-4 h-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
-        "bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)] border-r border-[var(--glass-border)]",
-        isExpanded ? "w-[12.5rem]" : "w-16",
-        isExpanded ? "px-3" : "items-center",
+        "app-workbench-sidebar flex flex-col h-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+        isExpanded ? "w-56 px-3 py-3" : "w-14 items-center px-2 py-3",
         className
       )}
     >
-      {/* Logo 区域 (Removed) */}
+      <div className={cn(
+        "mb-3 flex h-10 w-full items-center",
+        isExpanded ? "justify-between" : "justify-center"
+      )}>
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--surface-hairline-soft)] bg-[var(--surface-panel)] text-primary">
+            <Terminal className="h-4 w-4" />
+          </div>
+          {isExpanded && (
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-[var(--text-strong)]">Any Code</div>
+              <div className="truncate text-[11px] text-muted-foreground">Claude Workbench</div>
+            </div>
+          )}
+        </div>
+      </div>
       
       {/* 主导航区域 - overflow-y-auto + min-h-0 确保窗口过小时底部按钮仍可见 */}
-      <div className={cn("flex-1 flex flex-col w-full min-h-0 overflow-y-auto", isExpanded ? "space-y-1" : "items-center space-y-2")}>
+      <div className={cn("flex-1 flex flex-col w-full min-h-0 overflow-y-auto", isExpanded ? "gap-1" : "items-center gap-1.5")}>
         {mainNavItems.map((item) => (
           <NavButton key={item.view} item={item} />
         ))}
@@ -152,8 +168,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 底部状态区域 */}
       <div className={cn(
-        "flex flex-col w-full mt-auto pt-4 border-t border-[var(--glass-border)]",
-        isExpanded ? "space-y-3" : "items-center"
+        "flex flex-col w-full mt-auto pt-3 border-t border-[var(--surface-hairline-soft)]",
+        isExpanded ? "gap-3" : "items-center gap-2"
       )}>
         {/* 多引擎状态指示器 */}
         <div className={cn(isExpanded ? "w-full" : "flex justify-center w-full")}>
@@ -172,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* 操作按钮行 */}
         <div className={cn(
           "flex items-center gap-1",
-          isExpanded ? "justify-around px-2" : "flex-col"
+          isExpanded ? "justify-between px-1" : "flex-col"
         )}>
           <TooltipProvider>
             <Tooltip>
@@ -215,7 +231,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* 设置和展开/收起按钮 */}
         <div className={cn(
-          "flex items-center gap-1 pt-2 border-t border-[var(--glass-border)]",
+          "flex items-center gap-1 pt-2 border-t border-[var(--surface-hairline-soft)]",
           isExpanded ? "justify-between px-2" : "flex-col"
         )}>
           {bottomNavItems.map((item) => (

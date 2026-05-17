@@ -8,7 +8,7 @@ export const ProjectListSkeleton: React.FC = () => {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="w-full p-5 rounded-xl bg-card border border-border/40 shadow-sm"
+            className="w-full p-5 rounded-xl bg-card border border-[var(--surface-hairline-soft)] shadow-sm"
           >
             <div className="flex items-start gap-4 mb-3">
               <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
@@ -17,7 +17,7 @@ export const ProjectListSkeleton: React.FC = () => {
                 <Skeleton className="h-4 w-1/2 rounded" />
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-[var(--surface-hairline-soft)]">
               <Skeleton className="h-3 w-1/3" />
             </div>
           </div>

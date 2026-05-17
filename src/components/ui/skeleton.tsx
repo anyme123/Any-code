@@ -36,7 +36,7 @@ export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
         aria-live="polite"
         aria-label="加载中"
         className={cn(
-          "bg-muted rounded-lg",
+          "rounded-lg bg-[var(--surface-panel-elevated)]",
           animate && "animate-pulse",
           className
         )}

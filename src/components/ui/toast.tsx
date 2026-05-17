@@ -30,7 +30,7 @@ interface ToastProps {
 
 /**
  * Toast component for showing temporary notifications
- * 
+ *
  * @example
  * <Toast
  *   message="File saved successfully"
@@ -62,19 +62,19 @@ export const Toast: React.FC<ToastProps> = ({
       return () => clearTimeout(timer);
     }
   }, [duration]);
-  
+
   const icons = {
     success: <CheckCircle className="h-4 w-4" />,
     error: <AlertCircle className="h-4 w-4" />,
     info: <Info className="h-4 w-4" />,
   };
-  
+
   const colors = {
-    success: "text-green-600",
+    success: "text-success",
     error: "text-destructive",
-    info: "text-primary",
+    info: "text-info",
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -50, scale: 0.95 }}
@@ -82,7 +82,7 @@ export const Toast: React.FC<ToastProps> = ({
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        "flex items-center space-x-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg",
+        "flex items-center space-x-3 rounded-lg border border-[var(--surface-hairline-soft)] bg-card px-4 py-3 shadow-lg",
         className
       )}
     >
@@ -115,4 +115,4 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ children }) => {
       </div>
     </div>
   );
-}; 
+};

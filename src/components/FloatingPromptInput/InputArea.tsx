@@ -125,8 +125,8 @@ export const InputArea = forwardRef<HTMLTextAreaElement, InputAreaProps>(({
         placeholder={getPlaceholder()}
         disabled={disabled}
         className={cn(
-          "min-h-[56px] max-h-[300px] resize-none pr-10 overflow-y-auto",
-          "bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 focus:ring-primary/20",
+          "min-h-[58px] max-h-[300px] resize-none overflow-y-auto pr-10 text-[15px] leading-relaxed",
+          "bg-[var(--surface-code)] border-[var(--surface-hairline-soft)] shadow-inner focus:border-primary/70 focus:ring-primary/20",
           dragActive && "border-primary ring-2 ring-primary/20",
           // 🆕 建议存在时文字颜色正常，让叠加层可见
           suggestion && "caret-primary"
@@ -144,7 +144,7 @@ export const InputArea = forwardRef<HTMLTextAreaElement, InputAreaProps>(({
         size="icon"
         onClick={onExpand}
         disabled={disabled}
-        className="absolute right-1 bottom-1 h-8 w-8 text-muted-foreground hover:text-foreground"
+        className="absolute right-1.5 bottom-1.5 h-8 w-8 text-muted-foreground hover:text-foreground"
         aria-label={t('promptInput.expandInput')}
       >
         <Maximize2 className="h-4 w-4" aria-hidden="true" />

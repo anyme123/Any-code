@@ -296,14 +296,14 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
     // 消息区域现在是 Flex 容器的一部分，自然与输入区域分离
     <div
       ref={parentRef}
-      className="flex-1 overflow-y-auto relative"
+      className="message-scroll-surface flex-1 overflow-y-auto relative"
       style={{
-        paddingTop: '20px',
-        paddingBottom: '24px', // 底部留一点间距即可
+        paddingTop: '16px',
+        paddingBottom: '22px',
       }}
     >
       <div
-        className="relative w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[85%] mx-auto px-4 pt-8 pb-4"
+        className="message-rail relative w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[86%] mx-auto px-4 pl-5 pt-6 pb-4"
         style={{
           height: `${Math.max(rowVirtualizer.getTotalSize(), 100)}px`,
           minHeight: '100px',
@@ -333,10 +333,10 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
                 virtualItem={virtualItem}
                 measureElement={rowVirtualizer.measureElement}
                 isStreaming={isStreaming}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.16 }}
                 className="absolute inset-x-4"
                 style={{
                   top: virtualItem.start,
