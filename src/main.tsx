@@ -45,6 +45,11 @@ const AppWrapper: React.FC = () => {
     // 后台异步初始化 toolRegistry（不阻塞）
     initializeToolRegistry();
 
+    // 初始化桌面通知权限
+    import('./lib/notificationService').then(({ initNotification }) => {
+      initNotification();
+    }).catch(() => {});
+
     // 立即显示窗口（生产模式已优化，不需要长延迟）
     const timer = setTimeout(showWindow, 50);
     return () => clearTimeout(timer);

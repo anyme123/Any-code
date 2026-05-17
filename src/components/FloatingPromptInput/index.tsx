@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { FloatingPromptInputProps, FloatingPromptInputRef, ThinkingMode, ThinkingEffort, ModelType, ModelConfig } from "./types";
 import { getModels } from "./constants";
 import { MODEL_NAMES_UPDATED_EVENT } from "@/lib/modelNameParser";
+import { getCustomModels, CUSTOM_MODELS_UPDATED_EVENT, isCustomModelId } from "./customModelStorage";
 import { useImageHandling } from "./hooks/useImageHandling";
 import { useFileSelection } from "./hooks/useFileSelection";
 import { usePromptEnhancement } from "./hooks/usePromptEnhancement";
@@ -66,6 +67,11 @@ const FloatingPromptInputInner = (
     if (lowerModel.includes("sonnet") && lowerModel.includes("1m")) return "sonnet1m";
     if (lowerModel.includes("sonnet")) return "sonnet";
 
+    // 历史会话用 ANTHROPIC_MODEL 真实字符串保存（如 claude-3-5-sonnet-20241022）
+    // 若与本地自定义模型匹配，恢复为 "custom:<modelId>"
+    const matched = getCustomModels().find((m) => m.modelId === modelStr);
+    if (matched) return matched.id as ModelType;
+
     return null;
   };
 
@@ -116,13 +122,13 @@ const FloatingPromptInputInner = (
   }, []);
 
   // Initialize thinking mode from settings.json (source of truth)
-  // Claude 4.6: Read CLAUDE_CODE_THINKING_EFFORT from settings.json env
+  // Claude 4.7: Read CLAUDE_CODE_THINKING_EFFORT from settings.json env
   useEffect(() => {
     const initThinkingMode = async () => {
       try {
         const settings = await api.getClaudeSettings();
         const effort = settings?.env?.CLAUDE_CODE_THINKING_EFFORT;
-        if (effort && ['low', 'medium', 'high', 'max'].includes(effort)) {
+        if (effort && ['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) {
           dispatch({ type: "SET_THINKING_MODE", payload: { mode: 'adaptive', effort: effort as ThinkingEffort } });
           localStorage.setItem('thinking_mode', 'adaptive');
           localStorage.setItem('thinking_effort', effort);
@@ -174,26 +180,53 @@ const FloatingPromptInputInner = (
     }
   }, [state.executionEngineConfig, onExecutionEngineConfigChange]);
 
-  // Dynamic model list - initialized with dynamic names from cache
-  const [availableModels, setAvailableModels] = useState<ModelConfig[]>(() => getModels());
+  // 把 customModelStorage 中的自定义模型转成 ModelConfig
+  const buildCustomModelConfigs = (): ModelConfig[] => {
+    return getCustomModels().map<ModelConfig>((m) => ({
+      id: `custom:${m.modelId}` as ModelType,
+      name: m.name,
+      description: m.source === "api" ? "从 API 拉取" : "手动添加",
+      icon: <Sparkles className="h-4 w-4" />,
+      modelId: m.modelId,
+      isCustom: true,
+    }));
+  };
+
+  // Dynamic model list - 内置模型 + 用户自定义模型 + env 变量自定义模型（id="custom"，loadEnvCustomModel 中追加）
+  const [availableModels, setAvailableModels] = useState<ModelConfig[]>(() => [
+    ...getModels(),
+    ...buildCustomModelConfigs(),
+  ]);
 
   // Listen for model name updates from stream init messages
   useEffect(() => {
     const handleModelNamesUpdated = () => {
-      setAvailableModels(prev => {
+      setAvailableModels((prev) => {
         const updated = getModels();
-        // Preserve any custom model that was dynamically added
-        const customModel = prev.find(m => m.id === 'custom');
-        if (customModel) {
-          return [...updated, customModel];
-        }
-        return updated;
+        // 保留所有自定义条目（id="custom" 与 id="custom:xxx"）
+        const customs = prev.filter((m) => m.isCustom);
+        return [...updated, ...customs];
+      });
+    };
+
+    const handleCustomModelsUpdated = () => {
+      setAvailableModels((prev) => {
+        // 保留内置模型与 env 变量来源的 "custom" 条目；用最新 storage 替换 "custom:xxx"
+        const builtIns = prev.filter((m) => !m.isCustom);
+        const envCustom = prev.find((m) => m.id === "custom" && m.isCustom);
+        return [
+          ...builtIns,
+          ...(envCustom ? [envCustom] : []),
+          ...buildCustomModelConfigs(),
+        ];
       });
     };
 
     window.addEventListener(MODEL_NAMES_UPDATED_EVENT, handleModelNamesUpdated);
+    window.addEventListener(CUSTOM_MODELS_UPDATED_EVENT, handleCustomModelsUpdated);
     return () => {
       window.removeEventListener(MODEL_NAMES_UPDATED_EVENT, handleModelNamesUpdated);
+      window.removeEventListener(CUSTOM_MODELS_UPDATED_EVENT, handleCustomModelsUpdated);
     };
   }, []);
 
@@ -381,18 +414,19 @@ const FloatingPromptInputInner = (
             const isBuiltInModel = ['sonnet', 'opus', 'sonnet1m', 'opus1m'].includes(customModel.toLowerCase());
 
             if (!isBuiltInModel) {
-              // This is a custom model - add it to the list
+              // 来自 settings.json 环境变量的自定义模型，单独占位 id="custom"
               const customModelConfig: ModelConfig = {
                 id: "custom" as ModelType,
                 name: customModel,
                 description: "Custom model from environment variables",
-                icon: <Sparkles className="h-4 w-4" />
+                icon: <Sparkles className="h-4 w-4" />,
+                modelId: customModel,
+                isCustom: true,
               };
 
               setAvailableModels(prev => {
                 const hasCustom = prev.some(m => m.id === "custom");
                 if (!hasCustom) return [...prev, customModelConfig];
-                // Update existing custom model if name changed
                 return prev.map(m => m.id === "custom" ? customModelConfig : m);
               });
             }
@@ -412,9 +446,14 @@ const FloatingPromptInputInner = (
     setPrompt: (text: string) => dispatch({ type: "SET_PROMPT", payload: text }),
   }));
 
-  // Toggle thinking mode - cycle through: off → high → max → low → medium → off
-  const EFFORT_CYCLE: (ThinkingEffort | 'off')[] = ['off', 'high', 'max', 'low', 'medium'];
+  // Toggle thinking mode - cycle through: off → high → xhigh → max → low → medium → off
+  const EFFORT_CYCLE: (ThinkingEffort | 'off')[] = ['off', 'high', 'xhigh', 'max', 'low', 'medium'];
 
+  /**
+   * 🔧 修复并发竞态：先把 settings.json 写入完成（CLI 启动时会读它），
+   *    再更新 UI 状态和 localStorage。
+   *    旧实现是先 dispatch 再 await，用户切到 max 后立刻发送会让 CLI 读到旧 effort。
+   */
   const handleToggleThinkingMode = useCallback(async () => {
     const currentMode = state.selectedThinkingMode;
     const currentEffort = state.selectedThinkingEffort;
@@ -428,29 +467,22 @@ const FloatingPromptInputInner = (
     const newMode: ThinkingMode = nextKey === 'off' ? 'off' : 'adaptive';
     const newEffort: ThinkingEffort | undefined = nextKey === 'off' ? undefined : nextKey as ThinkingEffort;
 
-    dispatch({ type: "SET_THINKING_MODE", payload: { mode: newMode, effort: newEffort } });
+    // 1️⃣ 先把权威源（settings.json）落盘 —— 失败就不动 UI
+    try {
+      await api.updateThinkingMode(newMode === 'adaptive', newEffort);
+    } catch (error) {
+      console.error("Failed to update thinking mode:", error);
+      return;
+    }
 
-    // Persist to localStorage
+    // 2️⃣ 落盘成功后再同步前端状态与缓存
+    dispatch({ type: "SET_THINKING_MODE", payload: { mode: newMode, effort: newEffort } });
     try {
       localStorage.setItem('thinking_mode', newMode);
       if (newEffort) localStorage.setItem('thinking_effort', newEffort);
       else localStorage.removeItem('thinking_effort');
     } catch {
       // Ignore localStorage errors
-    }
-
-    try {
-      await api.updateThinkingMode(newMode === 'adaptive', newEffort);
-    } catch (error) {
-      console.error("Failed to update thinking mode:", error);
-      // Revert on error
-      dispatch({ type: "SET_THINKING_MODE", payload: { mode: currentMode, effort: currentEffort } });
-      try {
-        localStorage.setItem('thinking_mode', currentMode);
-        if (currentEffort) localStorage.setItem('thinking_effort', currentEffort);
-      } catch {
-        // Ignore localStorage errors
-      }
     }
   }, [state.selectedThinkingMode, state.selectedThinkingEffort]);
 
@@ -522,12 +554,13 @@ const FloatingPromptInputInner = (
         finalPrompt = finalPrompt + (finalPrompt.endsWith(' ') || finalPrompt === '' ? '' : ' ') + imagePathMentions;
       }
 
-      // When custom model is selected, pass the actual model name instead of "custom"
+      // 自定义模型（id="custom" 或 "custom:xxx"）需要把 ANTHROPIC_MODEL 真实字符串传出去
       let modelToSend = state.selectedModel;
-      if (state.selectedModel === 'custom') {
-        const customModelConfig = availableModels.find(m => m.id === 'custom');
-        if (customModelConfig) {
-          modelToSend = customModelConfig.name as ModelType;
+      if (state.selectedModel === 'custom' || isCustomModelId(state.selectedModel)) {
+        const customModelConfig = availableModels.find(m => m.id === state.selectedModel);
+        const realModelId = customModelConfig?.modelId || customModelConfig?.name;
+        if (realModelId) {
+          modelToSend = realModelId as ModelType;
         }
       }
 

@@ -141,6 +141,7 @@ export interface ClaudeExecutionConfig {
   verbose: boolean;
   permissions: ClaudePermissionConfig;
   disable_rewind_git_operations: boolean;
+  disable_auto_commit_after_response?: boolean;
 }
 
 /**
@@ -363,6 +364,14 @@ export interface ApiKeyUsage {
   query_start_date: string;
   /** Query end date */
   query_end_date: string;
+}
+
+/**
+ * 从 /v1/models 接口拉取的模型信息
+ */
+export interface AnthropicModelInfo {
+  id: string;
+  display_name?: string;
 }
 
 /**
@@ -963,10 +972,10 @@ export const api = {
   },
 
   /**
-   * Updates the thinking mode using Claude 4.6 Adaptive Thinking
+   * Updates the thinking mode using Claude 4.7 Adaptive Thinking
    * Sets CLAUDE_CODE_THINKING_EFFORT env var in settings.json
    * @param enabled - Whether to enable adaptive thinking
-   * @param effort - Effort level: low, medium, high, max (only used when enabled)
+   * @param effort - Effort level: low, medium, high, xhigh, max (only used when enabled)
    * @returns Promise resolving when the settings are updated
    */
   async updateThinkingMode(enabled: boolean, effort?: string): Promise<string> {
@@ -2135,6 +2144,18 @@ export const api = {
   },
 
   /**
+   * 调用当前 Provider 的 /v1/models 接口拉取可用模型列表
+   */
+  async fetchAnthropicModels(): Promise<AnthropicModelInfo[]> {
+    try {
+      return await invoke<AnthropicModelInfo[]>("fetch_anthropic_models");
+    } catch (error) {
+      console.error("Failed to fetch Anthropic models:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Reorders provider configurations
    * @param ids - Array of provider IDs in the desired order
    * @returns Promise resolving to success message
@@ -3061,6 +3082,24 @@ export const api = {
     }
   },
 
+  /**
+   * Open a file path in the user's preferred IDE with optional line/column.
+   * editor: 'auto' | 'cursor' | 'code' | 'idea' | 'system'
+   */
+  async openPathInEditor(
+    filePath: string,
+    line?: number,
+    column?: number,
+    editor?: string,
+  ): Promise<void> {
+    try {
+      return await invoke<void>("open_path_in_editor", { filePath, line, column, editor });
+    } catch (error) {
+      console.error("Failed to open path in editor:", error);
+      throw error;
+    }
+  },
+
   // ==================== Git Statistics ====================
 
   /**
@@ -3163,13 +3202,23 @@ export const api = {
    * @returns Promise resolving to array of Codex sessions
    */
   async listCodexSessions(): Promise<import('@/types/codex').CodexSession[]> {
+    // Cache for 10 seconds to avoid duplicate calls during startup
+    const now = Date.now();
+    if (this._codexSessionsCache && now - this._codexSessionsCacheTime < 10000) {
+      return this._codexSessionsCache;
+    }
     try {
-      return await invoke<import('@/types/codex').CodexSession[]>("list_codex_sessions");
+      const result = await invoke<import('@/types/codex').CodexSession[]>("list_codex_sessions");
+      this._codexSessionsCache = result;
+      this._codexSessionsCacheTime = now;
+      return result;
     } catch (error) {
       console.error("Failed to list Codex sessions:", error);
       throw error;
     }
   },
+  _codexSessionsCache: null as import('@/types/codex').CodexSession[] | null,
+  _codexSessionsCacheTime: 0,
 
   /**
    * Deletes a Codex session
@@ -4192,13 +4241,24 @@ export const api = {
    * @returns Promise resolving to array of session info
    */
   async listGeminiSessions(projectPath: string): Promise<import('@/types/gemini').GeminiSessionInfo[]> {
+    // Cache per project path for 10 seconds
+    const now = Date.now();
+    const cacheKey = projectPath;
+    const cached = this._geminiSessionsCache?.get(cacheKey);
+    if (cached && now - cached.time < 10000) {
+      return cached.data;
+    }
     try {
-      return await invoke("list_gemini_sessions", { projectPath });
+      const result = await invoke<import('@/types/gemini').GeminiSessionInfo[]>("list_gemini_sessions", { projectPath });
+      if (!this._geminiSessionsCache) this._geminiSessionsCache = new Map();
+      this._geminiSessionsCache.set(cacheKey, { data: result, time: now });
+      return result;
     } catch (error) {
       console.error("Failed to list Gemini sessions:", error);
       throw error;
     }
   },
+  _geminiSessionsCache: null as Map<string, { data: any[]; time: number }> | null,
 
   /**
    * Gets detailed session information
