@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { Settings, Zap, Check, Monitor, Terminal, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -33,10 +34,13 @@ export type ClaudeRuntimeMode = 'auto' | 'native' | 'wsl';
 
 export interface ExecutionEngineConfig {
   engine: ExecutionEngine;
+  // Claude-specific config
+  claudeFastMode?: boolean;
   // Codex-specific config
   codexMode?: CodexExecutionMode;
   codexModel?: string;
   codexApiKey?: string;
+  codexFastMode?: boolean;
   /** Codex reasoning effort level: minimal, low, medium, high, xhigh */
   codexReasoningLevel?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
   // Gemini-specific config
@@ -367,6 +371,29 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
     });
   };
 
+  const handleClaudeFastModeChange = async (enabled: boolean) => {
+    onChange({
+      ...value,
+      claudeFastMode: enabled,
+    });
+    try {
+      await api.updateClaudeFastMode(enabled);
+    } catch (error) {
+      console.error('[ExecutionEngineSelector] Failed to persist Claude fast mode:', error);
+      await message('保存 Claude Fast 模式失败: ' + (error instanceof Error ? error.message : String(error)), {
+        title: '错误',
+        kind: 'error',
+      });
+    }
+  };
+
+  const handleCodexFastModeChange = (enabled: boolean) => {
+    onChange({
+      ...value,
+      codexFastMode: enabled,
+    });
+  };
+
   const handleGeminiApprovalModeChange = (mode: 'auto_edit' | 'yolo' | 'default') => {
     onChange({
       ...value,
@@ -412,6 +439,9 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
                 ({value.codexMode === 'read-only' ? '只读' : value.codexMode === 'full-auto' ? '编辑' : '完全访问'})
               </span>
             )}
+            {((value.engine === 'claude' && value.claudeFastMode) || (value.engine === 'codex' && value.codexFastMode)) && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">Fast</span>
+            )}
             {value.engine === 'gemini' && value.geminiApprovalMode && (
               <span className="text-xs text-muted-foreground">
                 ({value.geminiApprovalMode === 'yolo' ? 'YOLO' : value.geminiApprovalMode === 'auto_edit' ? '自动编辑' : '默认'})
@@ -456,6 +486,29 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
             </div>
           </div>
 
+          {/* Claude-specific settings */}
+          {value.engine === 'claude' && (
+            <>
+              <div className="h-px bg-border" />
+
+              <label className="flex items-center justify-between gap-4 rounded-md border p-3 cursor-pointer">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    Fast 模式
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    开启 Claude Opus fast mode，并优先使用 Opus 4.7 fast 配置。
+                  </p>
+                </div>
+                <Switch
+                  checked={!!value.claudeFastMode}
+                  onCheckedChange={handleClaudeFastModeChange}
+                />
+              </label>
+            </>
+          )}
+
           {/* Codex-specific settings */}
           {value.engine === 'codex' && (
             <>
@@ -493,6 +546,23 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Fast Mode */}
+              <label className="flex items-center justify-between gap-4 rounded-md border p-3 cursor-pointer">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    Fast 模式
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    使用 Codex service_tier=fast；仅 GPT-5.5/GPT-5.4 支持。
+                  </p>
+                </div>
+                <Switch
+                  checked={!!value.codexFastMode}
+                  onCheckedChange={handleCodexFastModeChange}
+                />
+              </label>
 
               {/* Status */}
               <div className="rounded-md border p-2 bg-muted/50">

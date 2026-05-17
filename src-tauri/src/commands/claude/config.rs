@@ -461,6 +461,55 @@ pub async fn update_thinking_mode(enabled: bool, effort: Option<String>) -> Resu
     ))
 }
 
+#[tauri::command]
+pub async fn update_claude_fast_mode(enabled: bool) -> Result<String, String> {
+    let claude_dir = get_claude_dir().map_err(|e| format!("Failed to get claude dir: {}", e))?;
+    let settings_path = claude_dir.join("settings.json");
+
+    let mut settings = if settings_path.exists() {
+        let content = fs::read_to_string(&settings_path)
+            .map_err(|e| format!("Failed to read settings: {}", e))?;
+        serde_json::from_str::<serde_json::Value>(&content)
+            .map_err(|e| format!("Failed to parse settings: {}", e))?
+    } else {
+        serde_json::json!({})
+    };
+
+    if !settings.is_object() {
+        settings = serde_json::json!({});
+    }
+
+    let settings_obj = settings.as_object_mut().unwrap();
+    if enabled {
+        settings_obj.insert("fastMode".to_string(), serde_json::json!(true));
+        let env_value = settings_obj
+            .entry("env".to_string())
+            .or_insert_with(|| serde_json::json!({}));
+        if let Some(env_obj) = env_value.as_object_mut() {
+            env_obj.insert(
+                "CLAUDE_CODE_ENABLE_OPUS_4_7_FAST_MODE".to_string(),
+                serde_json::json!("1"),
+            );
+        }
+    } else {
+        settings_obj.remove("fastMode");
+        if let Some(env_obj) = settings_obj.get_mut("env").and_then(|v| v.as_object_mut()) {
+            env_obj.remove("CLAUDE_CODE_ENABLE_OPUS_4_7_FAST_MODE");
+            env_obj.remove("CLAUDE_CODE_FAST_MODE");
+        }
+    }
+
+    let json_string = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    fs::write(&settings_path, &json_string)
+        .map_err(|e| format!("Failed to write settings: {}", e))?;
+
+    Ok(format!(
+        "Claude fast mode {} successfully",
+        if enabled { "enabled" } else { "disabled" }
+    ))
+}
+
 /// Recursively finds all CLAUDE.md files in a project directory
 #[tauri::command]
 pub async fn find_claude_md_files(project_path: String) -> Result<Vec<ClaudeMdFile>, String> {

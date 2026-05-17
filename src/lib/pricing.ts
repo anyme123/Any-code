@@ -128,6 +128,12 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheWrite: 0,
     cacheRead: 0.50
   },
+  'gpt-5.5-fast': {
+    input: 12.50,
+    output: 75.00,
+    cacheWrite: 0,
+    cacheRead: 1.25
+  },
   'gpt-5.5-pro': {
     input: 30.00,
     output: 180.00,
@@ -394,6 +400,9 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // ============================================================================
 
   // GPT-5.5 / GPT-5 Pro 系列
+  if (normalized.includes('5.5') && normalized.includes('fast')) {
+    return MODEL_PRICING['gpt-5.5-fast'];
+  }
   if (normalized.includes('5.5-pro') || normalized.includes('5_5_pro')) {
     return MODEL_PRICING['gpt-5.5-pro'];
   }

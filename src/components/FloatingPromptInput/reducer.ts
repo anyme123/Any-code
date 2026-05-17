@@ -33,8 +33,10 @@ export const initialState: InputState = {
   cursorPosition: 0,
   executionEngineConfig: {
     engine: "claude",
+    claudeFastMode: false,
     codexMode: "read-only",
     codexModel: "gpt-5.5",
+    codexFastMode: false,
     geminiModel: "auto-gemini-3",
   },
   enableProjectContext: false,

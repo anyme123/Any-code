@@ -96,6 +96,15 @@ struct ModelPricing {
 fn get_codex_pricing(model: &str) -> ModelPricing {
     let normalized = model.to_lowercase();
 
+    // GPT-5.5 Fast Mode (1.5x speed, 2.5x credit consumption)
+    if normalized.contains("5.5") && normalized.contains("fast") {
+        return ModelPricing {
+            input: 12.50,
+            output: 75.00,
+            cache_read: 1.25,
+        };
+    }
+
     // GPT-5.5 Pro (premium tier)
     if normalized.contains("5.5-pro") || normalized.contains("5_5_pro") {
         return ModelPricing {

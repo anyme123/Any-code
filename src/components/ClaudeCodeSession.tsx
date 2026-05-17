@@ -159,8 +159,10 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
     // Default config
     return {
       engine: 'claude',
+      claudeFastMode: false,
       codexMode: 'read-only',
       codexModel: 'gpt-5.5',
+      codexFastMode: false,
       geminiModel: 'auto-gemini-3',
     };
   });
@@ -433,8 +435,10 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
     isFirstPrompt,
     extractedSessionInfo,
     executionEngine: executionEngineConfig.engine, // 🆕 Codex integration
+    claudeFastMode: executionEngineConfig.claudeFastMode, // 🆕 Claude fast mode
     codexMode: executionEngineConfig.codexMode,    // 🆕 Codex integration
     codexModel: executionEngineConfig.codexModel,  // 🆕 Codex integration
+    codexFastMode: executionEngineConfig.codexFastMode, // 🆕 Codex fast mode
     codexReasoningLevel: executionEngineConfig.codexReasoningLevel, // 🆕 Codex integration
     geminiModel: executionEngineConfig.geminiModel,           // 🆕 Gemini integration
     geminiApprovalMode: executionEngineConfig.geminiApprovalMode, // 🆕 Gemini integration
@@ -1207,7 +1211,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
                         <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                          {queuedPrompt.model === "default" ? "Default" : queuedPrompt.model === "best" ? "Best" : queuedPrompt.model === "opusplan" ? "Opus Plan" : queuedPrompt.model === "haiku" ? "Haiku" : queuedPrompt.model === "opus1m" ? "Opus 1M" : queuedPrompt.model === "opus" ? "Opus" : queuedPrompt.model === "sonnet1m" ? "Sonnet 1M" : "Sonnet"}
+                          {queuedPrompt.model === "default" ? "Default" : queuedPrompt.model === "best" ? "Best" : queuedPrompt.model === "opusplan" ? "Opus Plan" : queuedPrompt.model === "haiku" ? "Haiku" : queuedPrompt.model === "opus" ? "Opus" : "Sonnet"}
                         </span>
                       </div>
                       <p className="text-sm line-clamp-2 break-words">{queuedPrompt.prompt}</p>

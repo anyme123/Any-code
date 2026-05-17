@@ -84,14 +84,16 @@ struct ModelPricing {
 /// Model family enumeration for categorization
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum ModelFamily {
-    Opus47,   // Claude 4.7 Opus
-    Opus46,   // Claude 4.6 Opus
-    Sonnet46, // Claude 4.6 Sonnet
-    Opus45,   // Claude 4.5 Opus
-    Opus41,   // Claude 4.1 Opus
-    Sonnet45, // Claude 4.5 Sonnet
-    Haiku45,  // Claude 4.5 Haiku
-    Unknown,  // Unknown model
+    Opus47,     // Claude 4.7 Opus
+    Opus47Fast, // Claude 4.7 Opus Fast Mode
+    Opus46,     // Claude 4.6 Opus
+    Opus46Fast, // Claude 4.6 Opus Fast Mode
+    Sonnet46,   // Claude 4.6 Sonnet
+    Opus45,     // Claude 4.5 Opus
+    Opus41,     // Claude 4.1 Opus
+    Sonnet45,   // Claude 4.5 Sonnet
+    Haiku45,    // Claude 4.5 Haiku
+    Unknown,    // Unknown model
 }
 
 impl ModelPricing {
@@ -105,11 +107,23 @@ impl ModelPricing {
                 cache_write: 6.25,
                 cache_read: 0.50,
             },
+            ModelFamily::Opus47Fast => ModelPricing {
+                input: 30.0,
+                output: 150.0,
+                cache_write: 37.5,
+                cache_read: 3.0,
+            },
             ModelFamily::Opus46 => ModelPricing {
                 input: 5.0,
                 output: 25.0,
                 cache_write: 6.25,
                 cache_read: 0.50,
+            },
+            ModelFamily::Opus46Fast => ModelPricing {
+                input: 30.0,
+                output: 150.0,
+                cache_write: 37.5,
+                cache_read: 3.0,
             },
             ModelFamily::Sonnet46 => ModelPricing {
                 input: 3.0,
@@ -177,11 +191,17 @@ fn parse_model_family(model: &str) -> ModelFamily {
 
     // Claude 4.7 Series
     if normalized.contains("opus") && (normalized.contains("4.7") || normalized.contains("4-7")) {
+        if normalized.contains("fast") {
+            return ModelFamily::Opus47Fast;
+        }
         return ModelFamily::Opus47;
     }
 
     // Claude 4.6 Series
     if normalized.contains("opus") && (normalized.contains("4.6") || normalized.contains("4-6")) {
+        if normalized.contains("fast") {
+            return ModelFamily::Opus46Fast;
+        }
         return ModelFamily::Opus46;
     }
     if normalized.contains("sonnet") && (normalized.contains("4.6") || normalized.contains("4-6")) {

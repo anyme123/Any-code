@@ -86,9 +86,7 @@ pub(super) fn map_model_to_claude_alias(model: &str) -> String {
     match model {
         "default" => "default".to_string(),
         "best" => "best".to_string(),
-        "sonnet1m" => "sonnet[1m]".to_string(),
         "sonnet" => "sonnet".to_string(),
-        "opus1m" => "opus[1m]".to_string(),
         "opus" => "opus".to_string(),
         "haiku" => "haiku".to_string(),
         "opusplan" => "opusplan".to_string(),
@@ -220,9 +218,10 @@ fn create_system_command(
     args: Vec<String>,
     project_path: &str,
     model: Option<&str>,
+    fast_mode: bool,
     _max_thinking_tokens: Option<u32>, // Keep parameter for compatibility but don't use it
 ) -> Result<Command, String> {
-    create_windows_command(claude_path, args, project_path, model)
+    create_windows_command(claude_path, args, project_path, model, fast_mode)
 }
 
 /// Create a Windows command
@@ -232,6 +231,7 @@ fn create_windows_command(
     args: Vec<String>,
     project_path: &str,
     model: Option<&str>,
+    fast_mode: bool,
 ) -> Result<Command, String> {
     let mut cmd = create_command_with_env(claude_path);
 
@@ -242,6 +242,11 @@ fn create_windows_command(
             model_name
         );
         cmd.env("ANTHROPIC_MODEL", model_name);
+    }
+
+    if fast_mode {
+        cmd.env("CLAUDE_CODE_ENABLE_OPUS_4_7_FAST_MODE", "1");
+        cmd.env("CLAUDE_CODE_FAST_MODE", "1");
     }
 
     // Note: MAX_THINKING_TOKENS is now controlled via settings.json env field
@@ -285,8 +290,10 @@ pub async fn execute_claude_code(
     plan_mode: Option<bool>,
     max_thinking_tokens: Option<u32>,
     tab_id: Option<String>,
+    fast_mode: Option<bool>,
 ) -> Result<(), String> {
     let plan_mode = plan_mode.unwrap_or(false);
+    let fast_mode = fast_mode.unwrap_or(false);
     log::info!(
         "Starting Claude Code session with project context resume in: {} with model: {}, plan_mode: {}",
         project_path,
@@ -324,7 +331,11 @@ pub async fn execute_claude_code(
 
     // 使用新的参数构建函数（先映射模型名称）
     // 🔥 修复：prompt 不再通过命令行参数传递，改为 stdin 管道传递
-    let mapped_model = map_model_to_claude_alias(&model);
+    let mapped_model = if fast_mode {
+        "opus".to_string()
+    } else {
+        map_model_to_claude_alias(&model)
+    };
     let args = build_execution_args(&execution_config, &mapped_model);
 
     // Create command
@@ -333,6 +344,7 @@ pub async fn execute_claude_code(
         args,
         &project_path,
         Some(&mapped_model),
+        fast_mode,
         max_thinking_tokens,
     )?;
     spawn_claude_process(app, cmd, prompt, model, project_path, tab_id).await
@@ -349,8 +361,10 @@ pub async fn continue_claude_code(
     plan_mode: Option<bool>,
     max_thinking_tokens: Option<u32>,
     tab_id: Option<String>,
+    fast_mode: Option<bool>,
 ) -> Result<(), String> {
     let plan_mode = plan_mode.unwrap_or(false);
+    let fast_mode = fast_mode.unwrap_or(false);
     log::info!(
         "Continuing Claude Code conversation in: {} with model: {}, plan_mode: {}",
         project_path,
@@ -388,7 +402,11 @@ pub async fn continue_claude_code(
 
     // 使用新的参数构建函数，添加 -c 标志用于继续对话（先映射模型名称）
     // 🔥 修复：prompt 不再通过命令行参数传递，改为 stdin 管道传递
-    let mapped_model = map_model_to_claude_alias(&model);
+    let mapped_model = if fast_mode {
+        "opus".to_string()
+    } else {
+        map_model_to_claude_alias(&model)
+    };
     let mut args = build_execution_args(&execution_config, &mapped_model);
 
     // 在开头插入 -c 标志
@@ -400,6 +418,7 @@ pub async fn continue_claude_code(
         args,
         &project_path,
         Some(&mapped_model),
+        fast_mode,
         max_thinking_tokens,
     )?;
     spawn_claude_process(app, cmd, prompt, model, project_path, tab_id).await
@@ -417,8 +436,10 @@ pub async fn resume_claude_code(
     plan_mode: Option<bool>,
     max_thinking_tokens: Option<u32>,
     tab_id: Option<String>,
+    fast_mode: Option<bool>,
 ) -> Result<(), String> {
     let plan_mode = plan_mode.unwrap_or(false);
+    let fast_mode = fast_mode.unwrap_or(false);
     log::info!(
         "Resuming Claude Code session: {} in: {} with model: {}, plan_mode: {}",
         session_id,
@@ -468,7 +489,11 @@ pub async fn resume_claude_code(
 
     // 使用新的参数构建函数，添加 --resume 和 session_id（先映射模型名称）
     // 🔥 修复：prompt 不再通过命令行参数传递，改为 stdin 管道传递
-    let mapped_model = map_model_to_claude_alias(&model);
+    let mapped_model = if fast_mode {
+        "opus".to_string()
+    } else {
+        map_model_to_claude_alias(&model)
+    };
     let mut args = build_execution_args(&execution_config, &mapped_model);
 
     // 为resume模式重新组织参数：--resume session_id 应该在最前面
@@ -483,6 +508,7 @@ pub async fn resume_claude_code(
         args,
         &project_path,
         Some(&mapped_model),
+        fast_mode,
         max_thinking_tokens,
     )?;
 
@@ -512,6 +538,7 @@ pub async fn resume_claude_code(
                 Some(plan_mode),
                 max_thinking_tokens,
                 tab_id,
+                Some(fast_mode),
             )
             .await
         }

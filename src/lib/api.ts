@@ -984,6 +984,15 @@ export const api = {
     }
   },
 
+  async updateClaudeFastMode(enabled: boolean): Promise<string> {
+    try {
+      return await invoke<string>("update_claude_fast_mode", { enabled });
+    } catch (error) {
+      console.error("Failed to update Claude fast mode:", error);
+      throw error;
+    }
+  },
+
   /**
    * Get Claude execution configuration
    * @returns Promise resolving to the current execution config
@@ -1084,8 +1093,8 @@ export const api = {
    * @param planMode - Enable Plan Mode for read-only research and planning
    * @param tabId - Unique identifier for the tab, used to filter global events
    */
-  async executeClaudeCode(projectPath: string, prompt: string, model: string, planMode?: boolean, maxThinkingTokens?: number, tabId?: string): Promise<void> {
-    return invoke("execute_claude_code", { projectPath, prompt, model, planMode, maxThinkingTokens, tabId });
+  async executeClaudeCode(projectPath: string, prompt: string, model: string, planMode?: boolean, maxThinkingTokens?: number, tabId?: string, fastMode?: boolean): Promise<void> {
+    return invoke("execute_claude_code", { projectPath, prompt, model, planMode, maxThinkingTokens, tabId, fastMode });
   },
 
   /**
@@ -1093,8 +1102,8 @@ export const api = {
    * @param planMode - Enable Plan Mode for read-only research and planning
    * @param tabId - Unique identifier for the tab, used to filter global events
    */
-  async continueClaudeCode(projectPath: string, prompt: string, model: string, planMode?: boolean, maxThinkingTokens?: number, tabId?: string): Promise<void> {
-    return invoke("continue_claude_code", { projectPath, prompt, model, planMode, maxThinkingTokens, tabId });
+  async continueClaudeCode(projectPath: string, prompt: string, model: string, planMode?: boolean, maxThinkingTokens?: number, tabId?: string, fastMode?: boolean): Promise<void> {
+    return invoke("continue_claude_code", { projectPath, prompt, model, planMode, maxThinkingTokens, tabId, fastMode });
   },
 
   /**
@@ -1102,8 +1111,8 @@ export const api = {
    * @param planMode - Enable Plan Mode for read-only research and planning
    * @param tabId - Unique identifier for the tab, used to filter global events
    */
-  async resumeClaudeCode(projectPath: string, sessionId: string, prompt: string, model: string, planMode?: boolean, maxThinkingTokens?: number, tabId?: string): Promise<void> {
-    return invoke("resume_claude_code", { projectPath, sessionId, prompt, model, planMode, maxThinkingTokens, tabId });
+  async resumeClaudeCode(projectPath: string, sessionId: string, prompt: string, model: string, planMode?: boolean, maxThinkingTokens?: number, tabId?: string, fastMode?: boolean): Promise<void> {
+    return invoke("resume_claude_code", { projectPath, sessionId, prompt, model, planMode, maxThinkingTokens, tabId, fastMode });
   },
 
   /**

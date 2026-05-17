@@ -64,9 +64,7 @@ const FloatingPromptInputInner = (
     if (lowerModel === "default") return "default";
     if (lowerModel === "best") return "best";
     if (lowerModel.includes("opusplan")) return "opusplan";
-    if (lowerModel.includes("opus") && lowerModel.includes("1m")) return "opus1m";
     if (lowerModel.includes("opus")) return "opus";
-    if (lowerModel.includes("sonnet") && lowerModel.includes("1m")) return "sonnet1m";
     if (lowerModel.includes("sonnet")) return "sonnet";
     if (lowerModel.includes("haiku")) return "haiku";
 
@@ -164,7 +162,7 @@ const FloatingPromptInputInner = (
 
   // Sync external config changes
   useEffect(() => {
-    if (externalEngineConfig && externalEngineConfig.engine !== state.executionEngineConfig.engine) {
+    if (externalEngineConfig && JSON.stringify(externalEngineConfig) !== JSON.stringify(state.executionEngineConfig)) {
       dispatch({ type: "SET_EXECUTION_ENGINE_CONFIG", payload: externalEngineConfig });
     }
   }, [externalEngineConfig]);
@@ -389,8 +387,6 @@ const FloatingPromptInputInner = (
               'best',
               'sonnet',
               'opus',
-              'sonnet1m',
-              'opus1m',
               'haiku',
               'opusplan',
               'sonnet[1m]',

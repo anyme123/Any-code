@@ -94,10 +94,12 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
   const contextWindowModel =
     executionEngineConfig.engine === 'codex'
-      ? (session?.model || executionEngineConfig.codexModel)
+      ? (executionEngineConfig.codexFastMode && (session?.model || executionEngineConfig.codexModel)?.includes('gpt-5.5')
+        ? 'gpt-5.5-fast'
+        : (session?.model || executionEngineConfig.codexModel))
       : executionEngineConfig.engine === 'gemini'
         ? (executionEngineConfig.geminiModel || session?.model)
-        : selectedModel;
+        : (executionEngineConfig.claudeFastMode ? 'claude-opus-4-7-fast' : selectedModel);
 
   // Extract latest Codex rate limits from messages
   const codexRateLimits = useMemo<CodexRateLimits | null>(() => {

@@ -106,12 +106,14 @@ export const CLAUDE_PRICING = {
 
 export const CLAUDE_CONTEXT_WINDOWS = {
   // Claude 4.7/4.6 Series
-  'claude-opus-4-7': 200000,
+  'claude-opus-4-7': 1000000,
   'claude-opus-4-7[1m]': 1000000,
+  'claude-opus-4-7-1m': 1000000,
   'claude-opus-4-6': 200000,
   'claude-opus-4-6[1m]': 1000000,
-  'claude-sonnet-4-6': 200000,
+  'claude-sonnet-4-6': 1000000,
   'claude-sonnet-4-6[1m]': 1000000,
+  'claude-sonnet-4-6-1m': 1000000,
   // Claude 4.5 Series
   'claude-opus-4-5': 200000,
   'claude-opus-4-5-20251101': 200000,
@@ -133,6 +135,7 @@ export const CLAUDE_CONTEXT_WINDOWS = {
 
 export const CODEX_CONTEXT_WINDOWS = {
   'gpt-5.5': 1_050_000,
+  'gpt-5.5-fast': 1_050_000,
   'gpt-5.5-pro': 1_050_000,
   'gpt-5-pro': 1_050_000,
   'gpt-5.4': 1_050_000,
@@ -231,6 +234,7 @@ export function getContextWindowSize(model?: string, engine?: string): number {
     }
 
     if (lowerModel.includes('gpt-5.5') || lowerModel.includes('gpt5.5') || lowerModel.includes('gpt_5_5')) {
+      if (lowerModel.includes('fast')) return CODEX_CONTEXT_WINDOWS['gpt-5.5-fast'];
       return lowerModel.includes('pro') ? CODEX_CONTEXT_WINDOWS['gpt-5.5-pro'] : CODEX_CONTEXT_WINDOWS['gpt-5.5'];
     }
     if (lowerModel.includes('gpt-5-pro') || lowerModel.includes('gpt_5_pro')) {
@@ -318,7 +322,9 @@ export const MODEL_ALIASES = {
   'default': 'claude-sonnet-4-6',
   'best': 'claude-opus-4-7',
   'opus': 'claude-opus-4-7', // 默认最新版本
-  'opus1m': 'claude-opus-4-7[1m]',
+  'opus[1m]': 'claude-opus-4-7',
+  'claude-opus-4-7[1m]': 'claude-opus-4-7',
+  'claude-opus-4-7-1m': 'claude-opus-4-7',
   'opus4.7': 'claude-opus-4-7',
   'opus-4.7': 'claude-opus-4-7',
   'opus4.6': 'claude-opus-4-6',
@@ -328,7 +334,9 @@ export const MODEL_ALIASES = {
   'opus4.1': 'claude-opus-4-1',
   'opus-4.1': 'claude-opus-4-1',
   'sonnet': 'claude-sonnet-4-6', // 默认最新版本
-  'sonnet1m': 'claude-sonnet-4-6[1m]',
+  'sonnet[1m]': 'claude-sonnet-4-6',
+  'claude-sonnet-4-6[1m]': 'claude-sonnet-4-6',
+  'claude-sonnet-4-6-1m': 'claude-sonnet-4-6',
   'sonnet4.6': 'claude-sonnet-4-6',
   'sonnet-4.6': 'claude-sonnet-4-6',
   'sonnet4.5': 'claude-sonnet-4-5',

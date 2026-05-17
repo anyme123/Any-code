@@ -1238,6 +1238,12 @@ pub async fn switch_codex_provider(config: CodexProviderConfig) -> Result<String
                 for key in &provider_keys {
                     existing_table.remove(*key);
                 }
+                if let Some(features) = existing_table
+                    .get_mut("features")
+                    .and_then(|v| v.as_table_mut())
+                {
+                    features.remove("fast_mode");
+                }
 
                 // Merge: new provider settings take precedence
                 for (key, value) in new_table {
@@ -1251,6 +1257,12 @@ pub async fn switch_codex_provider(config: CodexProviderConfig) -> Result<String
                 // New config is empty (official OpenAI), just remove provider keys
                 for key in &provider_keys {
                     existing_table.remove(*key);
+                }
+                if let Some(features) = existing_table
+                    .get_mut("features")
+                    .and_then(|v| v.as_table_mut())
+                {
+                    features.remove("fast_mode");
                 }
                 toml::to_string_pretty(&existing_table)
                     .map_err(|e| format!("Failed to serialize config: {}", e))?

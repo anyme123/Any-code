@@ -146,6 +146,9 @@ export interface CodexExecutionOptions {
   /** Model to use (e.g., gpt-5.5) */
   model?: string;
 
+  /** Enable Codex fast service tier for supported models */
+  fastMode?: boolean;
+
   /** Reasoning effort for this run */
   reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
 

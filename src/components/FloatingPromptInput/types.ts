@@ -7,9 +7,7 @@ export type ModelType =
   | "default"
   | "best"
   | "sonnet"
-  | "sonnet1m"
   | "opus"
-  | "opus1m"
   | "haiku"
   | "opusplan"
   | "custom";
