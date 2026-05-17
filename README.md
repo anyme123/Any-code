@@ -528,8 +528,8 @@ npm install
 # 3. 开发模式（热重载）
 npm run tauri dev
 
-# 4. 构建生产版本
-npm run tauri build
+# 4. 构建生产版本（会通过 build.ps1 加载签名环境变量）
+npm run tauri:build
 
 # 5. 快速构建（开发版，速度更快）
 npm run tauri:build-fast
