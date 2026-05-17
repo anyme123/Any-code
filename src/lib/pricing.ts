@@ -5,7 +5,7 @@
  * Claude 定价：https://platform.claude.com/docs/en/about-claude/pricing
  * Codex 定价：https://platform.openai.com/docs/pricing (codex-mini-latest)
  * 价格单位：美元/百万 tokens
- * Last Updated: March 2026
+ * Last Updated: May 2026
  */
 
 export interface ModelPricing {
@@ -24,7 +24,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Claude Models (Anthropic)
   // ============================================================================
 
-  // Claude 4.6 Series (Latest - February 2026)
+  // Claude 4.7 Series (Latest - May 2026)
+  'claude-opus-4.7': {
+    input: 5.0,
+    output: 25.0,
+    cacheWrite: 6.25,
+    cacheRead: 0.50
+  },
+  'claude-opus-4.7-1m': {
+    input: 5.0,
+    output: 25.0,
+    cacheWrite: 6.25,
+    cacheRead: 0.50
+  },
+  // Claude Opus 4.7 Fast Mode (faster output, higher cost)
+  'claude-opus-4.7-fast': {
+    input: 30.0,
+    output: 150.0,
+    cacheWrite: 37.5,
+    cacheRead: 3.0
+  },
+
+  // Claude 4.6 Series
   'claude-opus-4.6': {
     input: 5.0,
     output: 25.0,
@@ -39,8 +60,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   // Claude Opus 4.6 Fast Mode (2.5x faster, higher cost)
   'claude-opus-4.6-fast': {
-    input: 30.0,       // $30 / 1M input tokens (<200K context)
-    output: 150.0,     // $150 / 1M output tokens
+    input: 30.0,
+    output: 150.0,
     cacheWrite: 37.5,
     cacheRead: 3.0
   },
@@ -391,7 +412,15 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // Claude Models (Anthropic)
   // ============================================================================
 
-  // Claude 4.6 Series (Latest)
+  // Claude 4.7 Series (Latest)
+  if (normalized.includes('opus') && (normalized.includes('4.7') || normalized.includes('4-7'))) {
+    if (normalized.includes('fast')) {
+      return MODEL_PRICING['claude-opus-4.7-fast'];
+    }
+    return MODEL_PRICING['claude-opus-4.7'];
+  }
+
+  // Claude 4.6 Series
   if (normalized.includes('opus') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
     if (normalized.includes('fast')) {
       return MODEL_PRICING['claude-opus-4.6-fast'];
@@ -423,7 +452,7 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['claude-haiku-4.5']; // Default to latest
   }
   if (normalized.includes('opus')) {
-    return MODEL_PRICING['claude-opus-4.6']; // Default to latest
+    return MODEL_PRICING['claude-opus-4.7']; // Default to latest
   }
   if (normalized.includes('sonnet')) {
     return MODEL_PRICING['claude-sonnet-4.6']; // Default to latest

@@ -69,7 +69,7 @@ pub struct ProjectUsage {
 // ============================================================================
 // Claude Model Pricing - Single Source of Truth
 // Source: https://platform.claude.com/docs/en/about-claude/pricing
-// Last Updated: February 2026
+// Last Updated: May 2026
 // ============================================================================
 
 /// Model pricing structure (prices per million tokens)
@@ -84,6 +84,7 @@ struct ModelPricing {
 /// Model family enumeration for categorization
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum ModelFamily {
+    Opus47,   // Claude 4.7 Opus (Latest)
     Opus46,   // Claude 4.6 Opus
     Sonnet46, // Claude 4.6 Sonnet
     Opus45,   // Claude 4.5 Opus
@@ -97,7 +98,14 @@ impl ModelPricing {
     /// Get pricing for a specific model family
     const fn for_family(family: ModelFamily) -> Self {
         match family {
-            // Claude 4.6 Series (Latest - February 2026)
+            // Claude 4.7 Series (Latest - May 2026)
+            ModelFamily::Opus47 => ModelPricing {
+                input: 5.0,
+                output: 25.0,
+                cache_write: 6.25,
+                cache_read: 0.50,
+            },
+            // Claude 4.6 Series
             ModelFamily::Opus46 => ModelPricing {
                 input: 5.0,
                 output: 25.0,
@@ -168,7 +176,12 @@ fn parse_model_family(model: &str) -> ModelFamily {
     // Priority-based matching (order matters!)
     // Check for specific model families in order from most to least specific
 
-    // Claude 4.6 Series (Latest)
+    // Claude 4.7 Series (Latest)
+    if normalized.contains("opus") && (normalized.contains("4.7") || normalized.contains("4-7")) {
+        return ModelFamily::Opus47;
+    }
+
+    // Claude 4.6 Series
     if normalized.contains("opus") && (normalized.contains("4.6") || normalized.contains("4-6")) {
         return ModelFamily::Opus46;
     }
@@ -197,7 +210,7 @@ fn parse_model_family(model: &str) -> ModelFamily {
         return ModelFamily::Haiku45; // Default to latest Haiku
     }
     if normalized.contains("opus") {
-        return ModelFamily::Opus46; // Default to latest Opus
+        return ModelFamily::Opus47; // Default to latest Opus
     }
     if normalized.contains("sonnet") {
         return ModelFamily::Sonnet46; // Default to latest Sonnet
@@ -562,13 +575,13 @@ pub fn get_usage_stats(days: Option<u32>) -> Result<UsageStats, String> {
 
     // Convert hashmaps to sorted vectors
     let mut by_model: Vec<ModelUsage> = model_stats.into_values().collect();
-    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut by_date: Vec<DailyUsage> = daily_stats.into_values().collect();
     by_date.sort_by(|a, b| a.date.cmp(&b.date));
 
     let mut by_project: Vec<ProjectUsage> = project_stats.into_values().collect();
-    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(std::cmp::Ordering::Equal));
 
     Ok(UsageStats {
         total_cost,
@@ -734,13 +747,13 @@ pub fn get_usage_by_date_range(start_date: String, end_date: String) -> Result<U
     let unique_sessions: HashSet<_> = filtered_entries.iter().map(|e| &e.session_id).collect();
 
     let mut by_model: Vec<ModelUsage> = model_stats.into_values().collect();
-    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut by_date: Vec<DailyUsage> = daily_stats.into_values().collect();
     by_date.sort_by(|a, b| a.date.cmp(&b.date));
 
     let mut by_project: Vec<ProjectUsage> = project_stats.into_values().collect();
-    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(std::cmp::Ordering::Equal));
 
     Ok(UsageStats {
         total_cost,
@@ -827,9 +840,9 @@ pub fn get_session_stats(
     // Sort by order
     let order_str = order.unwrap_or_else(|| "desc".to_string());
     if order_str == "asc" {
-        by_session.sort_by(|a, b| a.total_cost.partial_cmp(&b.total_cost).unwrap());
+        by_session.sort_by(|a, b| a.total_cost.partial_cmp(&b.total_cost).unwrap_or(std::cmp::Ordering::Equal));
     } else {
-        by_session.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+        by_session.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(std::cmp::Ordering::Equal));
     }
 
     Ok(by_session)

@@ -386,7 +386,7 @@ pub async fn save_claude_settings(settings: serde_json::Value) -> Result<String,
     Ok("Settings saved successfully".to_string())
 }
 
-/// Updates the thinking mode in settings.json using Claude 4.6 Adaptive Thinking
+/// Updates the thinking mode in settings.json using Claude 4.7 Adaptive Thinking
 /// Sets CLAUDE_CODE_THINKING_EFFORT env var and cleans up legacy MAX_THINKING_TOKENS
 #[tauri::command]
 pub async fn update_thinking_mode(enabled: bool, effort: Option<String>) -> Result<String, String> {
@@ -425,7 +425,7 @@ pub async fn update_thinking_mode(enabled: bool, effort: Option<String>) -> Resu
         .as_object_mut()
         .ok_or("env is not an object")?;
 
-    // Update CLAUDE_CODE_THINKING_EFFORT (Claude 4.6 Adaptive Thinking)
+    // Update CLAUDE_CODE_THINKING_EFFORT (Claude 4.7 Adaptive Thinking)
     if enabled {
         let effort_value = effort.unwrap_or_else(|| "high".to_string());
         env_obj.insert(

@@ -1025,6 +1025,8 @@
     "thinkingEffortMediumDesc": "平衡速度與思考深度",
     "thinkingEffortHigh": "思考: 高",
     "thinkingEffortHighDesc": "深度思考，推薦用於複雜任務",
+    "thinkingEffortXHigh": "思考: 超高",
+    "thinkingEffortXHighDesc": "超深度思考，最適合程式設計和代理任務",
     "thinkingEffortMax": "思考: 最大",
     "thinkingEffortMaxDesc": "最大思考深度，適合最複雜的推理",
     "deepThinkingTokens": "Claude 將進行深度思考 (10K tokens)",

@@ -798,7 +798,8 @@
     "subagent": "Subagent",
     "executionProcess": "Execution Process",
     "messageCount": "{{count}} messages",
-    "noSubagentMessages": "No subagent messages"
+    "noSubagentMessages": "No subagent messages",
+    "executing": "Subagent executing..."
   },
   "provider": {
     "loadConfigFailed": "Failed to load provider config",
@@ -1029,6 +1030,8 @@
     "thinkingEffortMediumDesc": "Balance speed and thinking depth",
     "thinkingEffortHigh": "Thinking: High",
     "thinkingEffortHighDesc": "Deep thinking, recommended for complex tasks",
+    "thinkingEffortXHigh": "Thinking: Extra High",
+    "thinkingEffortXHighDesc": "Extra deep thinking, best for coding and agentic tasks",
     "thinkingEffortMax": "Thinking: Max",
     "thinkingEffortMaxDesc": "Maximum thinking depth for hardest reasoning",
     "deepThinkingTokens": "Claude will perform deep thinking (10K tokens)",
