@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-05-17",
+  "scope": "fail",
+  "policyVersion": "2026-05-17.policy-v1",
+  "entries": [
+    {
+      "path": "src/lib/api.ts",
+      "lines": 3621,
+      "policyId": "ipc-bridge",
+      "priority": "P0",
+      "warnThreshold": 700,
+      "failThreshold": 1200
+    },
+    {
+      "path": "src-tauri/src/commands/codex/config.rs",
+      "lines": 1714,
+      "policyId": "rust-engine-critical",
+      "priority": "P0",
+      "warnThreshold": 900,
+      "failThreshold": 1500
+    },
+    {
+      "path": "src-tauri/src/claude_binary.rs",
+      "lines": 2345,
+      "policyId": "rust-feature-hotpath",
+      "priority": "P1",
+      "warnThreshold": 1000,
+      "failThreshold": 1800
+    },
+    {
+      "path": "src-tauri/src/commands/wsl_utils.rs",
+      "lines": 2074,
+      "policyId": "rust-feature-hotpath",
+      "priority": "P1",
+      "warnThreshold": 1000,
+      "failThreshold": 1800
+    },
+    {
+      "path": "src/hooks/usePromptExecution.ts",
+      "lines": 1733,
+      "policyId": "feature-hotpath",
+      "priority": "P1",
+      "warnThreshold": 900,
+      "failThreshold": 1500
+    }
+  ]
+}

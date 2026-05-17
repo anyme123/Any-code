@@ -1,0 +1,108 @@
+{
+  "version": "2026-05-17.policy-v1",
+  "description": "Tiered file-size governance. P0 = critical bridge / runtime (strict caps). P1 = active business surfaces. P2 = legacy / locale bundles (looser cap, still visible).",
+  "policies": [
+    {
+      "id": "ipc-bridge",
+      "description": "IPC bridge layer (src/lib/api.ts and split-out api/* modules) — strictest budget, every new IPC should not balloon a single file.",
+      "priority": "P0",
+      "warnThreshold": 700,
+      "failThreshold": 1200,
+      "match": {
+        "exactPaths": ["src/lib/api.ts"],
+        "prefixes": ["src/lib/api/"]
+      }
+    },
+    {
+      "id": "rust-engine-critical",
+      "description": "Claude/Codex/Gemini CLI runners, MCP bridge, process registry — must stay surgical to avoid runtime regressions.",
+      "priority": "P0",
+      "warnThreshold": 900,
+      "failThreshold": 1500,
+      "match": {
+        "prefixes": [
+          "src-tauri/src/commands/claude/",
+          "src-tauri/src/commands/codex/",
+          "src-tauri/src/commands/gemini/",
+          "src-tauri/src/mcp/",
+          "src-tauri/src/process/"
+        ]
+      }
+    },
+    {
+      "id": "feature-hotpath",
+      "description": "Active feature surfaces: session window, prompt execution, providers, settings, message rendering.",
+      "priority": "P1",
+      "warnThreshold": 900,
+      "failThreshold": 1500,
+      "match": {
+        "exactPaths": [
+          "src/hooks/usePromptExecution.ts",
+          "src/lib/codexConverter.ts",
+          "src/lib/translationMiddleware.ts",
+          "src/lib/tokenCounter.ts"
+        ],
+        "prefixes": [
+          "src/components/session/",
+          "src/components/message/",
+          "src/components/settings/",
+          "src/components/widgets/"
+        ]
+      }
+    },
+    {
+      "id": "rust-feature-hotpath",
+      "description": "Legacy oversize Rust modules. Should shrink over time; baseline records the current snapshot.",
+      "priority": "P1",
+      "warnThreshold": 1000,
+      "failThreshold": 1800,
+      "match": {
+        "exactPaths": [
+          "src-tauri/src/claude_binary.rs",
+          "src-tauri/src/claude_mcp.rs",
+          "src-tauri/src/codex_mcp.rs",
+          "src-tauri/src/gemini_mcp.rs",
+          "src-tauri/src/commands/extensions.rs",
+          "src-tauri/src/commands/prompt_tracker.rs",
+          "src-tauri/src/commands/translator.rs",
+          "src-tauri/src/commands/storage.rs",
+          "src-tauri/src/commands/provider.rs",
+          "src-tauri/src/commands/enhanced_hooks.rs",
+          "src-tauri/src/commands/context_manager.rs",
+          "src-tauri/src/commands/permission_config.rs",
+          "src-tauri/src/commands/usage.rs",
+          "src-tauri/src/commands/acemcp.rs",
+          "src-tauri/src/commands/mcp.rs",
+          "src-tauri/src/commands/wsl_utils.rs"
+        ]
+      }
+    },
+    {
+      "id": "styles",
+      "description": "Stylesheet surfaces — warn early; encourage feature-local CSS instead of a god file.",
+      "priority": "P2",
+      "warnThreshold": 800,
+      "failThreshold": 2000,
+      "match": {
+        "prefixes": ["src/styles/"]
+      }
+    },
+    {
+      "id": "i18n",
+      "description": "Locale bundles — keep watching but allow legacy bulk.",
+      "priority": "P2",
+      "warnThreshold": 1600,
+      "failThreshold": 2500,
+      "match": {
+        "prefixes": ["src/i18n/locales/"]
+      }
+    }
+  ],
+  "defaultPolicy": {
+    "id": "default-source",
+    "description": "Fallback for source files outside specialized groups.",
+    "priority": "P1",
+    "warnThreshold": 1000,
+    "failThreshold": 1800
+  }
+}

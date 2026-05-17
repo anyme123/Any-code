@@ -1,0 +1,13 @@
+dist
+build
+coverage
+node_modules
+src-tauri/target
+src-tauri/gen
+src-tauri/binaries
+package-lock.json
+*.min.js
+*.min.css
+src/i18n/locales/*.json
+docs/architecture/large-file-baseline.json
+docs/architecture/large-file-near-threshold-watchlist.md

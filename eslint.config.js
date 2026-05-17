@@ -1,0 +1,155 @@
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import reactPlugin from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import prettier from "eslint-config-prettier";
+
+export default tseslint.config(
+  {
+    ignores: [
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      "node_modules/**",
+      "src-tauri/target/**",
+      "src-tauri/gen/**",
+      "src-tauri/binaries/**",
+      "**/*.d.ts",
+      "vite.config.ts",
+      "vitest.config.ts",
+      "scripts/**",
+    ],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    plugins: {
+      react: reactPlugin,
+      "react-hooks": reactHooks,
+    },
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        navigator: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        fetch: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        Blob: "readonly",
+        File: "readonly",
+        FileReader: "readonly",
+        FormData: "readonly",
+        Headers: "readonly",
+        Request: "readonly",
+        Response: "readonly",
+        AbortController: "readonly",
+        AbortSignal: "readonly",
+        Event: "readonly",
+        CustomEvent: "readonly",
+        MouseEvent: "readonly",
+        KeyboardEvent: "readonly",
+        HTMLElement: "readonly",
+        HTMLInputElement: "readonly",
+        HTMLTextAreaElement: "readonly",
+        HTMLButtonElement: "readonly",
+        HTMLDivElement: "readonly",
+        HTMLImageElement: "readonly",
+        HTMLAnchorElement: "readonly",
+        HTMLSelectElement: "readonly",
+        IntersectionObserver: "readonly",
+        ResizeObserver: "readonly",
+        MutationObserver: "readonly",
+        localStorage: "readonly",
+        sessionStorage: "readonly",
+        crypto: "readonly",
+        structuredClone: "readonly",
+        queueMicrotask: "readonly",
+        requestAnimationFrame: "readonly",
+        cancelAnimationFrame: "readonly",
+        requestIdleCallback: "readonly",
+        cancelIdleCallback: "readonly",
+        process: "readonly",
+        Buffer: "readonly",
+        global: "readonly",
+        __APP_VERSION__: "readonly",
+      },
+    },
+    settings: {
+      react: { version: "18.3" },
+    },
+    rules: {
+      // React core
+      "react/jsx-uses-react": "off",
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
+      "react/no-unescaped-entities": "off",
+      "react/display-name": "off",
+      "react-hooks/rules-of-hooks": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+
+      // TypeScript
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+      "@typescript-eslint/ban-ts-comment": [
+        "warn",
+        {
+          "ts-expect-error": "allow-with-description",
+          "ts-ignore": false,
+          minimumDescriptionLength: 5,
+        },
+      ],
+      "@typescript-eslint/no-empty-object-type": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/triple-slash-reference": "off",
+
+      // General — downgrade to warn where the code legitimately needs these patterns
+      // (ANSI control-char regex, escape characters inside JS-style regex literals).
+      "no-empty": ["warn", { allowEmptyCatch: true }],
+      "no-constant-condition": ["warn", { checkLoops: false }],
+      "no-console": "off",
+      "no-debugger": "warn",
+      "no-control-regex": "warn",
+      "no-useless-escape": "warn",
+      "no-shadow-restricted-names": "warn",
+      "prefer-const": "warn",
+      eqeqeq: ["warn", "smart"],
+    },
+  },
+  {
+    files: ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"],
+    languageOptions: {
+      globals: {
+        describe: "readonly",
+        it: "readonly",
+        test: "readonly",
+        expect: "readonly",
+        beforeAll: "readonly",
+        beforeEach: "readonly",
+        afterAll: "readonly",
+        afterEach: "readonly",
+        vi: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  prettier,
+);
