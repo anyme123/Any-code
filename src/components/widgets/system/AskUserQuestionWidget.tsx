@@ -12,7 +12,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { HelpCircle, CheckCircle, MessageCircle, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { HelpCircle, CheckCircle, MessageCircle, ChevronDown, ChevronUp, Check, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useUserQuestion, getQuestionId } from "@/contexts/UserQuestionContext";
@@ -125,6 +125,15 @@ export const AskUserQuestionWidget: React.FC<AskUserQuestionWidgetProps> = ({
       return () => clearTimeout(timer);
     }
   }, [questions, hasAnswers, answered, triggerQuestionDialog, isError, result]);
+
+  // 🆕 手动重新打开问答对话框（修复 Plan 模式下自动触发失效问题 #176）
+  const handleManualTrigger = () => {
+    if (triggerQuestionDialog && questions.length > 0) {
+      // 重置触发标记，允许再次触发
+      hasTriggered.current = false;
+      triggerQuestionDialog(questions);
+    }
+  };
 
   // 解析answers - 可能在result.content中以字符串格式存储
   const parsedAnswers = useMemo(() => {
@@ -265,22 +274,41 @@ export const AskUserQuestionWidget: React.FC<AskUserQuestionWidgetProps> = ({
               )}
             </div>
 
-            {/* 折叠按钮 */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleCollapse();
-              }}
-            >
-              {isCollapsed ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
+            <div className="flex items-center gap-1">
+              {/* 手动触发对话框（修复 #176 Plan 模式下自动弹窗失效） */}
+              {!hasAnswers && !answered && !isError && triggerQuestionDialog && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleManualTrigger();
+                  }}
+                  title="重新打开问答对话框"
+                >
+                  <MousePointerClick className="h-3 w-3" />
+                  回答
+                </Button>
               )}
-            </Button>
+
+              {/* 折叠按钮 */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCollapse();
+                }}
+              >
+                {isCollapsed ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* 折叠时显示的简要信息 */}

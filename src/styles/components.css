@@ -77,20 +77,20 @@
 
 /* --- CROSS-PLATFORM SCROLLBARS (OverlayScrollbars Style) --- */
 
-/* Global scrollbar reset */
+/* Global scrollbar reset — 始终显示细滚动条轨道，避免 hover 切换导致布局抖动 */
 html * {
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-color: rgba(128, 128, 128, 0.15) transparent;
 }
 
-/* Show scrollbar on hover */
+/* 滚动容器 hover 时加深滚动条 */
 html *:hover {
   scrollbar-color: var(--color-muted-foreground) transparent;
 }
 
 /* Webkit Scrollbar Styling (Chrome, Edge, Safari) */
 html *::-webkit-scrollbar {
-  width: 8px;  /* Slightly wider for better usability */
+  width: 8px;
   height: 8px;
 }
 
@@ -99,11 +99,11 @@ html *::-webkit-scrollbar-track {
 }
 
 html *::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 4px; /* Pill shape */
-  border: 2px solid transparent; /* Creates padding effect */
+  background-color: rgba(128, 128, 128, 0.12);
+  border-radius: 4px;
+  border: 2px solid transparent;
   background-clip: content-box;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.3s ease;
 }
 
 html *:hover::-webkit-scrollbar-thumb {
@@ -112,7 +112,7 @@ html *:hover::-webkit-scrollbar-thumb {
 }
 
 html *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-foreground); /* Darker on direct hover */
+  background-color: var(--color-foreground);
   opacity: 0.8;
 }
 
@@ -203,7 +203,7 @@ code:hover::-webkit-scrollbar-thumb,
 
 /* Light theme scrollbars */
 .light * {
-  scrollbar-color: transparent transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
 }
 
 .light *::-webkit-scrollbar-track {
@@ -211,7 +211,7 @@ code:hover::-webkit-scrollbar-thumb,
 }
 
 .light *::-webkit-scrollbar-thumb {
-  background-color: transparent;
+  background-color: rgba(0, 0, 0, 0.06);
   border: none;
 }
 

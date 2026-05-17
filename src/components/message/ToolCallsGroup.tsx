@@ -127,7 +127,7 @@ export const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
   // 如果全部都是 task 工具，直接渲染聚合组件
   if (taskAggregateData && otherToolCalls.length === 0) {
     return (
-      <div className={cn('tool-single-call my-2', className)}>
+      <div className={cn('tool-single-call', className)}>
         <TaskListAggregateWidget toolCalls={taskAggregateData} />
       </div>
     );
@@ -137,7 +137,7 @@ export const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
   if (toolCalls.length === 1) {
     const tool = toolCalls[0];
     return (
-      <div className={cn('tool-single-call my-2', className)}>
+      <div className={cn('tool-single-call', className)}>
         <SingleToolCall
           tool={tool}
           result={getResultById(tool.id)}
@@ -149,11 +149,11 @@ export const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
   }
 
   return (
-    <div className={cn('tool-calls-group my-2 border border-border rounded-lg overflow-hidden', className)}>
+    <div className={cn('tool-calls-group border border-border/60 rounded-lg overflow-hidden', className)}>
       {/* 折叠/展开头部 */}
       <button
         onClick={toggleCollapse}
-        className="flex items-center gap-2 w-full px-4 py-3 text-left bg-muted/30 hover:bg-muted/50 transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-2 text-left bg-muted/30 hover:bg-muted/50 transition-colors"
       >
         {isCollapsed ? <ChevronRight className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
         <Wrench className="w-4 h-4 text-blue-500 shrink-0" />
@@ -191,7 +191,7 @@ export const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
           getStatusById={getStatusById}
         />
       ) : (
-        <div className="space-y-2 p-4 bg-background">
+        <div className="space-y-1.5 p-2.5 bg-background">
           {/* 如果有 task 工具，先渲染聚合任务列表 */}
           {taskAggregateData && (
             <TaskListAggregateWidget toolCalls={taskAggregateData} />
@@ -225,7 +225,7 @@ interface CollapsedSummaryProps {
 const CollapsedSummary: React.FC<CollapsedSummaryProps> = ({ toolCalls, getStatusById }) => {
   const { t } = useTranslation();
   return (
-    <div className="px-4 py-3 bg-background/50 border-t border-border space-y-2">
+    <div className="px-3 py-2 bg-background/50 border-t border-border/60 space-y-1.5">
       {/* 显示前3个工具 */}
       {toolCalls.slice(0, 3).map((tool, idx) => {
         const status = getStatusById(tool.id);
@@ -429,7 +429,6 @@ const parseResultContent = (content: any): string => {
 };
 
 const FallbackToolRender: React.FC<FallbackToolRenderProps> = ({ tool, result }) => {
-  const { t } = useTranslation();
   const COLLAPSE_HEIGHT = 300;
   const resultRef = useRef<HTMLPreElement>(null);
   const [shouldCollapse, setShouldCollapse] = useState(false);
@@ -446,17 +445,14 @@ const FallbackToolRender: React.FC<FallbackToolRenderProps> = ({ tool, result })
 
   const toggle = () => setCollapsed((v) => !v);
 
-  // 处理结果内容
   const resultContent = result ? parseResultContent(result.content) : '';
 
   return (
     <div className="fallback-tool-render space-y-2 text-xs">
-      <div className="text-muted-foreground">{t('tools.unregisteredTool')}</div>
-
       {tool.input && Object.keys(tool.input).length > 0 && (
         <details className="text-xs">
           <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
-            {t('tools.inputParams')}
+            参数
           </summary>
           <pre className="mt-1 p-2 bg-muted rounded text-[10px] overflow-x-auto whitespace-pre-wrap break-words" style={{ overflowWrap: 'anywhere' }}>
             {JSON.stringify(tool.input, null, 2)}
@@ -466,7 +462,7 @@ const FallbackToolRender: React.FC<FallbackToolRenderProps> = ({ tool, result })
 
       {result && (
         <div className={cn('p-2 rounded relative', result.is_error ? 'bg-red-500/10' : 'bg-muted')}>
-          <div className="font-medium mb-1 text-xs">{result.is_error ? t('tools.executionFailed') : t('tools.executionResult')}:</div>
+          <div className="font-medium mb-1 text-xs">{result.is_error ? '执行失败' : '执行结果'}:</div>
           <div className="relative">
             <pre
               ref={resultRef}
@@ -487,7 +483,7 @@ const FallbackToolRender: React.FC<FallbackToolRenderProps> = ({ tool, result })
               onClick={toggle}
               className="mt-2 text-[11px] text-primary underline underline-offset-2"
             >
-              {collapsed ? t('tools.expandAll') : t('tools.collapseContent')}
+              {collapsed ? '展开全部' : '收起'}
             </button>
           )}
         </div>

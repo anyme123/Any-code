@@ -130,7 +130,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
     isFirstPrompt,
     extractedSessionInfo,
     executionEngine = 'claude', // 🆕 默认使用 Claude Code
-    codexMode = 'read-only',     // 🆕 Codex 默认只读模式
+    codexMode = 'default',       // 🆕 Codex 默认模式（每次敏感操作前请求授权）
     codexModel,                  // 🆕 Codex 模型
     geminiModel,                 // 🆕 Gemini 模型
     geminiApprovalMode,          // 🆕 Gemini 审批模式
@@ -466,6 +466,12 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
 
           // Helper function to process Codex completion
           const processCodexComplete = async () => {
+            // 发送桌面通知
+            try {
+              const { notifyResponseComplete } = await import('@/lib/notificationService');
+              notifyResponseComplete('Codex');
+            } catch {}
+
             setIsLoading(false);
             hasActiveSessionRef.current = false;
             isListeningRef.current = false;
@@ -893,6 +899,12 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
 
           // Helper function to process Gemini completion
           const processGeminiComplete = async () => {
+            // 发送桌面通知
+            try {
+              const { notifyResponseComplete } = await import('@/lib/notificationService');
+              notifyResponseComplete('Gemini');
+            } catch {}
+
             setIsLoading(false);
             hasActiveSessionRef.current = false;
             isListeningRef.current = false;
@@ -1157,10 +1169,14 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
           const specificErrorUnlisten = await listen<string>(`claude-error:${sid}`, (evt) => {
             console.error('Claude error (scoped):', evt.payload);
             setError(evt.payload);
+            // 错误时兜底关闭 loading 状态：进程可能因 stderr 触发 error 后才退出，
+            // 也可能直接异常退出而不再发 complete 事件
+            if (hasActiveSessionRef.current) {
+              processComplete();
+            }
           });
 
           const specificCompleteUnlisten = await listen<boolean>(`claude-complete:${sid}`, () => {
-            
             processComplete();
           });
 
@@ -1202,7 +1218,12 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
         // Helper: Process Completion
         // ====================================================================
         const processComplete = async () => {
-          
+
+          // 发送桌面通知（窗口不在前台时）
+          try {
+            const { notifyResponseComplete } = await import('@/lib/notificationService');
+            notifyResponseComplete('Claude');
+          } catch {}
 
           // 🔧 FIX: Wait for pending prompt recording to complete (race condition fix)
           if (pendingClaudePromptRecordingPromise) {
@@ -1417,10 +1438,8 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
 
         // 🔒 CRITICAL FIX: 全局事件现在格式为 { tab_id: string | null, payload: string }
         const genericErrorUnlisten = await listen<ClaudeGlobalEventPayload<string>>('claude-error', (evt) => {
-          // 🔧 FIX: Only process if this tab has an active session
           if (!hasActiveSessionRef.current) return;
 
-          // 🔒 CRITICAL FIX: 使用 tab_id 过滤消息
           const { tabId: eventTabId, payload: errorPayload } = normalizeClaudeGlobalPayload(evt.payload);
           if (eventTabId && eventTabId !== tabIdRef.current) {
             return;
@@ -1428,14 +1447,14 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
 
           console.error('Claude error:', errorPayload);
           setError(errorPayload);
+          // 错误时兜底关闭 loading：避免后端只发 error 不发 complete 时 spinner 永转
+          if (hasActiveSessionRef.current) {
+            processComplete();
+          }
         });
 
-        // 🔒 CRITICAL FIX: 全局事件现在格式为 { tab_id: string | null, payload: boolean }
         const genericCompleteUnlisten = await listen<ClaudeGlobalEventPayload<boolean>>('claude-complete', (evt) => {
-          // 🔧 FIX: Only process if this tab has an active session
-          if (!hasActiveSessionRef.current) return;
-
-          // 🔒 CRITICAL FIX: 使用 tab_id 过滤消息
+          // 不再用 hasActiveSessionRef 过滤：错误兜底可能已先翻转 ref，会吞掉真正的 complete
           const { tabId: eventTabId } = normalizeClaudeGlobalPayload(evt.payload);
           if (eventTabId && eventTabId !== tabIdRef.current) {
             return;
@@ -1556,7 +1575,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
             await api.resumeCodex(effectiveSession.id, {
               projectPath,
               prompt: processedPrompt,
-              mode: codexMode || 'read-only',
+              mode: codexMode || 'default',
               model: codexModel || model,
               json: true
             });
@@ -1565,7 +1584,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
             await api.resumeLastCodex({
               projectPath,
               prompt: processedPrompt,
-              mode: codexMode || 'read-only',
+              mode: codexMode || 'default',
               model: codexModel || model,
               json: true
             });
@@ -1576,7 +1595,7 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
           await api.executeCodex({
             projectPath,
             prompt: processedPrompt,
-            mode: codexMode || 'read-only',
+            mode: codexMode || 'default',
             model: codexModel || model,
             json: true
           });

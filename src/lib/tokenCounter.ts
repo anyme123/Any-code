@@ -4,7 +4,7 @@
  * 基于Claude官方Token Count API的准确token计算服务
  * 支持所有消息类型和Claude模型的精确token统计和成本计算
  *
- * 2026年最新官方定价和Claude 4.6系列模型支持
+ * 2026年最新官方定价和Claude 4.7系列模型支持
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -15,16 +15,23 @@ import { api } from './api';
 // ⚠️ WARNING: This pricing table MUST be kept in sync with:
 //    src-tauri/src/commands/usage.rs::ModelPricing
 // Source: https://docs.claude.com/en/docs/about-claude/models/overview
-// Last Updated: February 2026
+// Last Updated: May 2026
 // ============================================================================
 
 export const CLAUDE_PRICING = {
-  // Claude 4.6 Series (Latest - February 2026)
+  // Claude 4.7 Series (Latest - May 2026)
+  'claude-opus-4-7': {
+    input: 5.0,
+    output: 25.0,
+    cache_write: 6.25,
+    cache_read: 0.50,
+  },
+  // Claude 4.6 Series
   'claude-opus-4-6': {
-    input: 15.0,
-    output: 75.0,
-    cache_write: 18.75,
-    cache_read: 1.50,
+    input: 5.0,
+    output: 25.0,
+    cache_write: 6.25,
+    cache_read: 0.50,
   },
   'claude-sonnet-4-6': {
     input: 3.0,
@@ -99,8 +106,11 @@ export const CLAUDE_PRICING = {
 // ============================================================================
 
 export const CLAUDE_CONTEXT_WINDOWS = {
+  // Claude 4.7 Series
+  'claude-opus-4-7': 1000000,
+  'claude-opus-4-7[1m]': 1000000,
   // Claude 4.6 Series
-  'claude-opus-4-6': 200000,
+  'claude-opus-4-6': 1000000,
   'claude-opus-4-6[1m]': 1000000,
   'claude-sonnet-4-6': 200000,
   'claude-sonnet-4-6[1m]': 1000000,
@@ -277,8 +287,10 @@ export function getContextWindowSize(model?: string, engine?: string): number {
 
 // 标准化模型名称映射
 export const MODEL_ALIASES = {
-  'opus': 'claude-opus-4-6', // 默认最新版本
-  'opus1m': 'claude-opus-4-6[1m]',
+  'opus': 'claude-opus-4-7', // 默认最新版本
+  'opus1m': 'claude-opus-4-7[1m]',
+  'opus4.7': 'claude-opus-4-7',
+  'opus-4.7': 'claude-opus-4-7',
   'opus4.6': 'claude-opus-4-6',
   'opus-4.6': 'claude-opus-4-6',
   'opus4.5': 'claude-opus-4-5',
@@ -456,7 +468,12 @@ export class TokenCounterService {
 
     // Priority-based matching (order matters! MUST match backend logic)
 
-    // Claude 4.6 Series (Latest)
+    // Claude 4.7 Series (Latest)
+    if (normalized.includes('opus') && (normalized.includes('4.7') || normalized.includes('4-7'))) {
+      return 'claude-opus-4-7';
+    }
+
+    // Claude 4.6 Series
     if (normalized.includes('opus') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
       return 'claude-opus-4-6';
     }
@@ -485,7 +502,7 @@ export class TokenCounterService {
       return 'claude-haiku-4-5'; // Default to latest
     }
     if (normalized.includes('opus')) {
-      return 'claude-opus-4-6'; // Default to latest
+      return 'claude-opus-4-7'; // Default to latest
     }
     if (normalized.includes('sonnet')) {
       return 'claude-sonnet-4-6'; // Default to latest
@@ -1047,7 +1064,7 @@ export function calculateSessionStats(
     total_tokens: breakdown.total,
     total_cost: breakdown.cost.total_cost,
     message_count: messages.length,
-    average_tokens_per_message: breakdown.total / messages.length,
+    average_tokens_per_message: messages.length > 0 ? breakdown.total / messages.length : 0,
     cache_efficiency: breakdown.efficiency.cache_hit_rate,
     breakdown,
     trend: {

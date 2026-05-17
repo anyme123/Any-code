@@ -274,6 +274,43 @@ const MessageContentComponent: React.FC<MessageContentProps> = ({
               const language = match ? match[1] : '';
 
               if (inline || !language) {
+                const text = String(children ?? '');
+                const filePathMatch = text.match(/^([\w./\\\-@~][\w./\\\-@~ ]*[\w./\\\-])(?::(\d+)(?::(\d+))?)?$/);
+                const looksLikeFilePath =
+                  filePathMatch &&
+                  (text.includes('/') || text.includes('\\')) &&
+                  /\.[a-zA-Z0-9]{1,8}(?::|$)/.test(text) &&
+                  !text.startsWith('http') &&
+                  !text.includes(' ');
+
+                if (looksLikeFilePath && filePathMatch) {
+                  const [, filePath, lineStr, colStr] = filePathMatch;
+                  const line = lineStr ? parseInt(lineStr, 10) : undefined;
+                  const column = colStr ? parseInt(colStr, 10) : undefined;
+                  return (
+                    <code
+                      className={cn(
+                        "px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/30 text-xs font-mono text-primary cursor-pointer hover:bg-primary/20 transition-colors",
+                        className
+                      )}
+                      title={`点击在编辑器中打开${line ? ` (行 ${line})` : ''}`}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          const editor = (typeof localStorage !== 'undefined' && localStorage.getItem('preferred_editor')) || 'auto';
+                          const { api } = await import('@/lib/api');
+                          await api.openPathInEditor(filePath, line, column, editor);
+                        } catch (err) {
+                          console.error('Failed to open path in editor:', err);
+                        }
+                      }}
+                      {...rest}
+                    >
+                      {children}
+                    </code>
+                  );
+                }
+
                 return (
                   <code
                     className={cn(

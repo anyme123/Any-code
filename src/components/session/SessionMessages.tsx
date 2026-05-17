@@ -1,5 +1,4 @@
 import React, { useImperativeHandle, forwardRef, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { StreamMessageV2 } from "@/components/message";
 import type { MessageGroup } from "@/lib/subagentGrouping";
@@ -7,65 +6,77 @@ import { useSession } from "@/contexts/SessionContext";
 import { CliProcessingIndicator } from "./CliProcessingIndicator";
 
 /**
- * ✅ MeasurableItem: 自动监听高度变化的虚拟列表项
- * 
- * 使用 ResizeObserver 并在内容变化时自动通知虚拟列表重新测量。
- * 仅对正在流式输出的消息进行防抖，历史消息立即更新以防止滚动抖动。
+ * MeasurableItem: 虚拟列表项的高度测量包装
+ *
+ * 设计参考 VSCode notebook / Linear / Cursor：
+ * - 使用 ResizeObserver 监听高度变化
+ * - 阈值提高到 8px，过滤亚像素抖动与字体渲染微差
+ * - 流式期间 120ms 节流；非流式 16ms（一帧）合并
+ * - rAF 合并测量，避免一次交互内多次同步 measureElement → totalSize 跳变
+ * - contain: layout style 限制重排范围，防止子内容回流污染父级
  */
-const MeasurableItem = ({ virtualItem, measureElement, isStreaming, children, ...props }: any) => {
+const MeasurableItem = ({ virtualItem, measureElement, isStreaming, children, style, className, ...props }: any) => {
   const elRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef(measureElement);
-  
-  // 保持 measureElement 引用最新
-  useEffect(() => {
-    measureRef.current = measureElement;
-  }, [measureElement]);
+  measureRef.current = measureElement;
 
   useEffect(() => {
     const el = elRef.current;
     if (!el) return;
 
-    // 初始测量 - 立即执行确保占位准确
     measureRef.current(el);
 
-    let frameId: number;
+    let frameId = 0;
+    let throttleTimer: ReturnType<typeof setTimeout> | undefined;
+    let pending = false;
+    let lastHeight = el.getBoundingClientRect().height;
 
-    // 创建观察者
-    const observer = new ResizeObserver(() => {
-      if (isStreaming) {
-        // ✅ 流式消息：使用防抖，避免每帧重绘导致的性能问题
-        cancelAnimationFrame(frameId);
-        frameId = requestAnimationFrame(() => {
-          if (elRef.current) {
-            measureRef.current(elRef.current);
-          }
-        });
-      } else {
-        // ✅ 历史消息：立即响应（通过 rAF 避免 Loop 错误），确保向上滚动时高度修正及时，减少抖动
-        requestAnimationFrame(() => {
-          if (elRef.current) {
-            measureRef.current(elRef.current);
-          }
-        });
-      }
+    const flush = () => {
+      pending = false;
+      throttleTimer = undefined;
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        frameId = 0;
+        if (elRef.current) measureRef.current(elRef.current);
+      });
+    };
+
+    const observer = new ResizeObserver((entries) => {
+      const newHeight = entries[0]?.contentRect.height ?? 0;
+      // 阈值 8px：避免字体渲染、滚动条等亚像素抖动触发 totalSize 跳变
+      if (Math.abs(newHeight - lastHeight) < 8) return;
+      lastHeight = newHeight;
+
+      if (pending) return;
+      pending = true;
+
+      // 流式期间使用更长节流；非流式合并到下一帧
+      const delay = isStreaming ? 120 : 16;
+      throttleTimer = setTimeout(flush, delay);
     });
 
     observer.observe(el);
 
     return () => {
       observer.disconnect();
-      cancelAnimationFrame(frameId);
+      if (frameId) cancelAnimationFrame(frameId);
+      if (throttleTimer) clearTimeout(throttleTimer);
     };
-  }, [isStreaming]); // 添加 isStreaming 依赖
+  }, [isStreaming]);
 
   return (
-    <motion.div
+    <div
       {...props}
       ref={elRef}
       data-index={virtualItem.index}
+      className={className}
+      style={{
+        ...style,
+        contain: 'layout style',
+      }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };
 
@@ -159,7 +170,7 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
       }
       return 200; // Default fallback
     },
-    overscan: 12, // ✅ OPTIMIZED: Increased to 12 to prevent blank areas during fast scrolling
+    overscan: 8, // 减少 overscan 降低 DOM 节点数，移除动画后不再需要过多缓冲
     measureElement: (element) => {
       // Ensure element is fully rendered before measurement
       return element?.getBoundingClientRect().height ?? 200;
@@ -170,34 +181,18 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
     scrollToBottom: () => {
       if (messageGroups.length === 0) return;
 
-      // Use virtualizer's scrollToIndex for reliable scrolling to the last item
       rowVirtualizer.scrollToIndex(messageGroups.length - 1, {
         align: 'end',
         behavior: 'auto',
       });
 
-      // Schedule rAF-based follow-up scrolls to handle the virtualizer's
-      // progressive height re-measurements. After scrollToIndex renders the
-      // target items, the virtualizer measures their actual heights which may
-      // differ from estimates, shifting the total scrollHeight.
-      // Uses requestAnimationFrame to sync with rendering cycle and checks
-      // whether we actually reached the bottom before each follow-up scroll.
-      const followUpDelays = [50, 150, 300, 500];
-      followUpDelays.forEach((delay) => {
-        setTimeout(() => {
-          requestAnimationFrame(() => {
-            if (parentRef.current) {
-              const { scrollTop, scrollHeight, clientHeight } = parentRef.current;
-              // Only scroll if we haven't reached the true bottom yet
-              if (scrollHeight - scrollTop - clientHeight > 1) {
-                parentRef.current.scrollTo({
-                  top: scrollHeight,
-                  behavior: 'auto',
-                });
-              }
-            }
-          });
-        }, delay);
+      // 单次 rAF 修正即可，避免多次修正与用户交互冲突
+      requestAnimationFrame(() => {
+        if (!parentRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = parentRef.current;
+        if (scrollHeight - scrollTop - clientHeight > 1) {
+          parentRef.current.scrollTop = scrollHeight - clientHeight;
+        }
       });
     },
     scrollToPrompt: (promptIndex: number) => {
@@ -298,24 +293,27 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
       ref={parentRef}
       className="flex-1 overflow-y-auto relative"
       style={{
-        paddingTop: '20px',
-        paddingBottom: '24px', // 底部留一点间距即可
+        paddingTop: '8px',
+        paddingBottom: '16px',
+        overscrollBehavior: 'contain',
+        overflowAnchor: 'none',
+        contain: 'strict',
+        willChange: 'scroll-position',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <div
-        className="relative w-full max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[85%] mx-auto px-4 pt-8 pb-4"
+        className="relative w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto px-3 pt-2 pb-2"
         style={{
           height: `${Math.max(rowVirtualizer.getTotalSize(), 100)}px`,
           minHeight: '100px',
+          contain: 'layout style',
         }}
       >
-        <AnimatePresence>
-          {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const messageGroup = messageGroups[virtualItem.index];
 
-            // 防御性检查：确保 messageGroup 存在
             if (!messageGroup) {
-              console.warn('[SessionMessages] messageGroup is undefined for index:', virtualItem.index);
               return null;
             }
 
@@ -333,16 +331,11 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
                 virtualItem={virtualItem}
                 measureElement={rowVirtualizer.measureElement}
                 isStreaming={isStreaming}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-x-4"
+                className="absolute inset-x-0"
                 style={{
                   top: virtualItem.start,
                 }}
               >
-                {/* ✅ 架构优化: StreamMessageV2 现在从 SessionContext 获取数据 */}
                 <StreamMessageV2
                   messageGroup={messageGroup}
                   onLinkDetected={onLinkDetected}
@@ -357,24 +350,25 @@ export const SessionMessages = forwardRef<SessionMessagesRef, SessionMessagesPro
               </MeasurableItem>
             );
           })}
-        </AnimatePresence>
       </div>
 
-      {/* CLI风格的处理状态指示器 - 显示在消息列表底部 */}
-      <CliProcessingIndicator
-        isProcessing={isLoading && messageGroups.length > 0}
-        onCancel={onCancel}
-      />
+      {/* CLI风格的处理状态指示器 - sticky 定位确保滚动时始终可见 */}
+      {isLoading && messageGroups.length > 0 && (
+        <div className="sticky bottom-0 z-10">
+          <CliProcessingIndicator
+            isProcessing={true}
+            onCancel={onCancel}
+          />
+        </div>
+      )}
 
-      {/* Error indicator - 移除固定 marginBottom，因为输入框不再是 fixed 定位 */}
+      {/* Error indicator */}
       {error && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <div
           className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive w-full max-w-5xl mx-auto mb-4"
         >
           {error}
-        </motion.div>
+        </div>
       )}
     </div>
   );

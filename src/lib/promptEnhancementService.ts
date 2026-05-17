@@ -68,7 +68,7 @@ export const PRESET_PROVIDERS = {
     id: 'anthropic',
     name: 'Anthropic Claude',
     apiUrl: 'https://api.anthropic.com',
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     apiFormat: 'anthropic' as const,
     enabled: false,
     apiKey: '',

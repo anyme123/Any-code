@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Clock, Plus, Trash2, CheckSquare, Square, FilePenLine, Loader2, Zap, Bot, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowLeft, Clock, Plus, Trash2, CheckSquare, Square, FilePenLine, Loader2, Zap, Bot, RefreshCw, Sparkles, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -215,6 +215,28 @@ export const SessionList: React.FC<SessionListProps> = ({
     e.stopPropagation(); // Prevent triggering onSessionClick
     setSessionToDelete(session);
     setDeleteDialogOpen(true);
+  };
+
+  // Handle copy resume command
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+  const handleCopyResumeCommand = async (e: React.MouseEvent, session: Session) => {
+    e.stopPropagation();
+    const engine = session.engine || 'claude';
+    let cmd = '';
+    if (engine === 'codex') {
+      cmd = `codex exec resume ${session.id}`;
+    } else if (engine === 'gemini') {
+      cmd = `gemini --resume ${session.id}`;
+    } else {
+      cmd = `claude --resume ${session.id}`;
+    }
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setCopiedSessionId(session.id);
+      setTimeout(() => setCopiedSessionId(null), 1500);
+    } catch (err) {
+      console.error('Failed to copy resume command:', err);
+    }
   };
 
   // Confirm deletion
@@ -577,6 +599,18 @@ export const SessionList: React.FC<SessionListProps> = ({
                 </div>
               </div>
             </button>
+
+            {/* Copy resume command button - shown on hover */}
+            {!isSelectionMode && (
+              <button
+                onClick={(e) => handleCopyResumeCommand(e, session)}
+                className="px-3 py-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity hover:bg-primary/10 text-primary"
+                aria-label="复制 Resume 命令"
+                title={copiedSessionId === session.id ? "已复制！" : `复制 ${session.engine === 'codex' ? 'codex exec resume' : session.engine === 'gemini' ? 'gemini --resume' : 'claude --resume'} 命令`}
+              >
+                <Copy className={cn("h-4 w-4 transition-colors", copiedSessionId === session.id && "text-green-500")} aria-hidden="true" />
+              </button>
+            )}
 
             {/* Convert button - shown on hover (hidden in selection mode) */}
             {!isSelectionMode && onSessionConvert && (

@@ -5,9 +5,8 @@
  * 提供视觉分隔和折叠/展开功能
  */
 
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { Bot, ChevronDown, ChevronUp } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIMessage } from "./AIMessage";
 import { UserMessage } from "./UserMessage";
@@ -39,6 +38,8 @@ interface SubagentMessageGroupProps {
   className?: string;
   /** 链接检测回调 */
   onLinkDetected?: (url: string) => void;
+  /** 是否正在流式输出（子代理仍在执行中） */
+  isStreaming?: boolean;
 }
 
 /**
@@ -47,10 +48,11 @@ interface SubagentMessageGroupProps {
  * 将 Task 工具调用和相关的子代理消息打包展示
  * 使用独立的视觉样式（边框、背景色、缩进）进行区分
  */
-export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
+const SubagentMessageGroupComponent: React.FC<SubagentMessageGroupProps> = ({
   group,
   className,
   onLinkDetected,
+  isStreaming = false,
 }) => {
   const { t } = useTranslation();
   // 🔄 默认折叠子代理执行过程，减少视觉干扰
@@ -71,12 +73,12 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
   }
 
   return (
-    <div className={cn("relative my-2", className)}>
+    <div className={cn("relative", className)}>
       {/* 子代理组容器 - Modern Clean Style */}
       <div className="rounded-lg border border-border/50 bg-muted/10 overflow-hidden">
 
         {/* Task 工具调用（固定显示） */}
-        <div className="border-b border-border/30">
+        <div className="border-b border-border/30 px-2 py-1">
           <AIMessage
             message={group.taskMessage}
             isStreaming={false}
@@ -86,8 +88,8 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
         </div>
 
         {/* 折叠控制按钮 - Compact Header */}
-        <div 
-          className="px-3 py-2 bg-muted/30 hover:bg-muted/50 border-b border-border/30 cursor-pointer transition-colors select-none flex items-center justify-between group/header"
+        <div
+          className="px-2.5 py-1.5 bg-muted/30 hover:bg-muted/50 border-b border-border/30 cursor-pointer transition-colors select-none flex items-center justify-between group/header"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2 min-w-0">
@@ -117,17 +119,12 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
           </div>
         </div>
 
-        {/* 子代理消息列表（可折叠） */}
-        <AnimatePresence initial={false}>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <div className="p-2 space-y-2 bg-background/30">
+        {/* 子代理消息列表（可折叠）
+            ⚡ 性能优化：移除 height: 0 → auto 动画，避免动画期间 ResizeObserver
+            连续触发 measureElement，导致虚拟列表 totalSize 抖动、滚动抽搐 */}
+        {isExpanded && (
+          <div className="overflow-hidden animate-in fade-in duration-150">
+            <div className="p-2 space-y-2 bg-background/30">
                 {/* 渲染子代理消息 */}
                 {subagentMessages.length > 0 ? (
                   subagentMessages.map((message, index) => {
@@ -176,11 +173,24 @@ export const SubagentMessageGroup: React.FC<SubagentMessageGroupProps> = ({
                     {t('subagent.noSubagentMessages')}
                   </div>
                 )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        )}
+
+        {/* 流式活跃指示器 - 子代理仍在执行中 */}
+        {isStreaming && (
+          <div className="px-3 py-2 border-t border-border/30 bg-muted/20 flex items-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs text-muted-foreground">
+              {t('subagent.executing', '子代理执行中...')}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+SubagentMessageGroupComponent.displayName = "SubagentMessageGroup";
+
+export const SubagentMessageGroup = memo(SubagentMessageGroupComponent);

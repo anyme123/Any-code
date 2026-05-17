@@ -159,7 +159,7 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
     // Default config
     return {
       engine: 'claude',
-      codexMode: 'read-only',
+      codexMode: 'default',
       codexModel: 'gpt-5.2',
       geminiModel: 'gemini-3-flash',
     };
@@ -252,52 +252,30 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
       isLoading
     });
 
-  // Fix: Scroll to bottom when session history is loaded
-  // Also re-trigger when message count changes significantly (e.g., streaming adds many messages)
+  // 初次加载会话历史时滚到底部，仅触发一次；若用户已开始浏览则放弃
   const hasScrolledToBottomRef = useRef<string | null>(null);
-  const lastScrolledMessageCountRef = useRef(0);
 
   useEffect(() => {
-    // Check if we have messages and parentRef is attached
-    if (displayableMessages.length > 0 && parentRef.current) {
-      const currentSessionId = session?.id || 'new_session';
-      const currentCount = displayableMessages.length;
+    if (displayableMessages.length === 0 || !parentRef.current) return;
+    const currentSessionId = session?.id || 'new_session';
+    if (hasScrolledToBottomRef.current === currentSessionId) return;
 
-      // Determine if we should scroll:
-      // 1. First time for this session (initial history load)
-      const isFirstTimeForSession = hasScrolledToBottomRef.current !== currentSessionId;
-      // 2. Message count jumped significantly (e.g., streaming added many messages at once)
-      const countDelta = currentCount - lastScrolledMessageCountRef.current;
-      const significantCountChange = lastScrolledMessageCountRef.current > 0 && countDelta >= 5;
+    // 标记预占，防止 effect 因 length 变化而重复触发
+    hasScrolledToBottomRef.current = currentSessionId;
 
-      if (isFirstTimeForSession || significantCountChange) {
-        // Use a small delay to ensure virtualizer has calculated sizes
-        const timer = setTimeout(() => {
-          if (parentRef.current) {
-            // Force scroll to bottom
-            parentRef.current.scrollTop = parentRef.current.scrollHeight;
+    const startTop = parentRef.current.scrollTop;
+    const timer = setTimeout(() => {
+      const el = parentRef.current;
+      if (!el) return;
+      // 用户在 150ms 内主动滚动过 → 放弃强制滚底
+      if (Math.abs(el.scrollTop - startTop) > 4) return;
+      el.scrollTop = el.scrollHeight;
+      setUserScrolled(false);
+      setShouldAutoScroll(true);
+    }, 150);
 
-            // Sync with smart auto-scroll state
-            setUserScrolled(false);
-            setShouldAutoScroll(true);
-
-            // Mark as done for this session
-            hasScrolledToBottomRef.current = currentSessionId;
-            lastScrolledMessageCountRef.current = currentCount;
-
-            // Schedule a follow-up scroll to handle virtualizer re-measurements
-            setTimeout(() => {
-              if (parentRef.current) {
-                parentRef.current.scrollTop = parentRef.current.scrollHeight;
-              }
-            }, 200);
-          }
-        }, 150); // 150ms delay for stability
-
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [displayableMessages.length, session?.id, setUserScrolled, setShouldAutoScroll]);
+    return () => clearTimeout(timer);
+  }, [session?.id, displayableMessages.length === 0, setUserScrolled, setShouldAutoScroll]);
 
   // ============================================================================
   // MESSAGE-LEVEL OPERATIONS (Fine-grained Undo/Redo)
@@ -455,21 +433,21 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
     processMessageWithTranslation
   });
 
-  // 🆕 包装 handleSendPrompt，发送消息时自动滚动到底部
-  // 解决问题：当用户滚动查看历史消息后发送新消息，页面不会自动滚动到底部
-  // 🔧 修复：消息数量过多时使用虚拟列表的 scrollToIndex 确保滚动到真正的底部
+  // 发送新消息时强制重置跟随状态并多次滚动到底部，避免新消息被遮挡
   const handleSendPromptWithScroll = useCallback((prompt: string, model: ModelType, maxThinkingTokens?: number) => {
-    // 重置滚动状态，确保发送消息后自动滚动到底部
     setUserScrolled(false);
     setShouldAutoScroll(true);
 
-    // 使用虚拟列表的 scrollToBottom 方法，解决消息过多时 scrollHeight 估算不准的问题
-    // 延迟执行，等待消息添加到列表后再滚动
-    setTimeout(() => {
-      sessionMessagesRef.current?.scrollToBottom();
-    }, 50);
-
     handleSendPrompt(prompt, model, maxThinkingTokens);
+
+    // 多帧滚动覆盖：消息渲染、虚拟列表测量、流式开始三个时机
+    requestAnimationFrame(() => {
+      sessionMessagesRef.current?.scrollToBottom();
+      requestAnimationFrame(() => {
+        sessionMessagesRef.current?.scrollToBottom();
+      });
+    });
+    setTimeout(() => sessionMessagesRef.current?.scrollToBottom(), 120);
   }, [handleSendPrompt, setUserScrolled, setShouldAutoScroll]);
 
   // 🆕 方案 B-1: 设置发送提示词回调，用于计划批准后自动执行
@@ -599,6 +577,59 @@ const ClaudeCodeSessionInner: React.FC<ClaudeCodeSessionProps> = ({
   useEffect(() => {
     onStreamingChange?.(isLoading, claudeSessionId);
   }, [isLoading, claudeSessionId, onStreamingChange]);
+
+  // 🔧 FIX: Streaming watchdog — detect stuck "responding" state
+  // If isLoading is true but no new messages arrive for 60s, check if process is still alive
+  // 使用连续失败计数器避免误判（子代理执行期间进程可能暂时不在列表中）
+  const watchdogFailCountRef = useRef(0);
+  useEffect(() => {
+    if (!isLoading) {
+      watchdogFailCountRef.current = 0;
+      return;
+    }
+
+    // 进程存活检测：8s × 连续 2 次失败 ≈ 16s 内恢复 spinner，
+    // 平衡子代理短暂离队的误判与僵死状态的响应速度
+    const watchdogTimer = setInterval(async () => {
+      if (!isLoading) return;
+      try {
+        const running = await api.listRunningClaudeSessions();
+        const sessionId = claudeSessionId || extractedSessionInfo?.sessionId;
+
+        const forceComplete = (reason: string) => {
+          watchdogFailCountRef.current += 1;
+          if (watchdogFailCountRef.current >= 2) {
+            console.warn(`[Watchdog] ${reason}, forcing completion`);
+            unlistenRefs.current.forEach(u => u && typeof u === 'function' && u());
+            unlistenRefs.current = [];
+            setIsLoading(false);
+            hasActiveSessionRef.current = false;
+            isListeningRef.current = false;
+            watchdogFailCountRef.current = 0;
+          }
+        };
+
+        if (sessionId) {
+          const isStillRunning = running.some(
+            (s: any) => s.session_id === sessionId || s.sessionId === sessionId
+          );
+          if (!isStillRunning) {
+            forceComplete('Session process not found');
+          } else {
+            watchdogFailCountRef.current = 0;
+          }
+        } else if (running.length === 0) {
+          forceComplete('No running sessions found');
+        } else {
+          watchdogFailCountRef.current = 0;
+        }
+      } catch {
+        // Ignore errors in watchdog
+      }
+    }, 8000);
+
+    return () => clearInterval(watchdogTimer);
+  }, [isLoading, claudeSessionId, extractedSessionInfo, setIsLoading]);
 
   // 🔧 FIX: When a tab becomes active (visible), re-verify session running state
   // Listeners persist across tab switches (DO NOT clean up on tab switch).

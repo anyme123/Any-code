@@ -188,6 +188,34 @@ export const TranslationSettings: React.FC<TranslationSettingsProps> = ({ onClos
             />
           </div>
 
+          {/* #171: 思考输出翻译开关（默认关闭以节省 tokens 与延迟） */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="translate-thinking" className="text-sm font-medium">
+                翻译思考输出
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                开启后将翻译模型的 thinking 内容（会增加 token 消耗与延迟）
+              </p>
+            </div>
+            <Switch
+              id="translate-thinking"
+              checked={(() => {
+                try { return localStorage.getItem('translate_thinking_output') === 'true'; }
+                catch { return false; }
+              })()}
+              onCheckedChange={(enabled) => {
+                try {
+                  localStorage.setItem('translate_thinking_output', String(enabled));
+                  setSuccess(enabled ? '已启用思考输出翻译' : '已关闭思考输出翻译');
+                  setTimeout(() => setSuccess(null), 2000);
+                } catch (err) {
+                  console.error('Failed to toggle translate_thinking_output:', err);
+                }
+              }}
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="api-base-url">{t('translation.apiBaseUrl')}</Label>

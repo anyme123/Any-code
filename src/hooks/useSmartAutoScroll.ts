@@ -1,253 +1,239 @@
 /**
  * 智能自动滚动 Hook
  *
- * 从 ClaudeCodeSession 提取（原 166-170 状态，305-435 逻辑）
- * 提供智能滚动管理：用户手动滚动检测、自动滚动到底部、流式输出滚动
+ * 设计理念（参考 ChatGPT / Slack / Discord 的 Tail-mode 实现）：
+ * 1. **单一真理**：滚动状态全部用 ref 管理，避免 React 状态切换重建监听器
+ * 2. **用户优先**：捕获 wheel / touch / keyboard / 拖动滚动条，交互期间禁止程序化滚动
+ * 3. **自动跟随**：仅当用户未离开底部时自动粘底；用户上滚后保持位置
+ * 4. **节流粘底**：流式期间使用单一 rAF 循环，间隔 100ms 比对距离再决定是否滚动
+ *
+ * 修复要点：
+ * - userScrolled 不再是 state，避免 handleScroll 闭包反复重建
+ * - 移除 200ms 间隔的 setInterval 修正，避免与用户交互争用
+ * - 借助原生交互事件（wheel / touch / mousedown）判定用户意图，
+ *   不再依赖 scrollDelta 估算（动量滚动会污染估算）
  */
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { ClaudeStreamMessage } from '@/types/claude';
 
 interface SmartAutoScrollConfig {
-  /** 可显示的消息列表（用于触发滚动） */
   displayableMessages: ClaudeStreamMessage[];
-  /** 是否正在加载（流式输出时） */
   isLoading: boolean;
 }
 
-/**
- * 计算消息的内容哈希，用于检测内容变化
- */
-function getLastMessageContentHash(messages: ClaudeStreamMessage[]): string {
-  if (messages.length === 0) return '';
-  const lastMsg = messages[messages.length - 1];
-  // 简单地使用内容长度和类型作为哈希
-  const contentLength = JSON.stringify(lastMsg.message?.content || '').length;
-  return `${messages.length}-${lastMsg.type}-${contentLength}`;
-}
-
 interface SmartAutoScrollReturn {
-  /** 滚动容器 ref */
   parentRef: React.RefObject<HTMLDivElement>;
-  /** 用户是否手动滚动离开底部 */
   userScrolled: boolean;
-  /** 设置用户滚动状态 */
   setUserScrolled: (scrolled: boolean) => void;
-  /** 设置自动滚动状态 */
   setShouldAutoScroll: (should: boolean) => void;
 }
 
-/**
- * 智能自动滚动 Hook
- *
- * @param config - 配置对象
- * @returns 滚动管理对象
- *
- * @example
- * const { parentRef, userScrolled, setUserScrolled, shouldAutoScroll, setShouldAutoScroll } =
- *   useSmartAutoScroll({
- *     displayableMessages,
- *     isLoading
- *   });
- */
+const BOTTOM_THRESHOLD = 80;        // 距底 80px 视为"在底部"
+const NEAR_BOTTOM_RECOVERY = 32;    // 距底 32px 内自动恢复粘底
+const STREAM_TICK_INTERVAL = 100;   // 流式粘底间隔
+const INTERACTION_RELEASE_DELAY = 220; // 交互释放后延迟判定（兼容动量滚动）
+
 export function useSmartAutoScroll(config: SmartAutoScrollConfig): SmartAutoScrollReturn {
   const { displayableMessages, isLoading } = config;
 
-  // Scroll state
-  const [userScrolled, setUserScrolled] = useState(false);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-
-  // Refs
   const parentRef = useRef<HTMLDivElement>(null);
-  const lastScrollPositionRef = useRef(0);
-  const isAutoScrollingRef = useRef(false); // Track if scroll was initiated by code
-  const autoScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Timer for resetting auto-scroll flag
-  const prevMessageCountRef = useRef(0); // Track previous message count for new message detection
 
-  // 计算最后一条消息的内容哈希，用于检测内容变化
-  const lastMessageHash = useMemo(
-    () => getLastMessageContentHash(displayableMessages),
-    [displayableMessages]
-  );
+  // 仅用于通知外部消费者；内部状态走 ref
+  const [userScrolled, setUserScrolledStateInternal] = useState(false);
 
-  // Helper to perform auto-scroll safely
-  const performAutoScroll = (behavior: ScrollBehavior = 'smooth') => {
-    if (parentRef.current) {
-      const scrollElement = parentRef.current;
-      // Check if we actually need to scroll to avoid unnecessary events
-      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
-      const targetScrollTop = scrollHeight - clientHeight;
+  // 单一状态对象（ref），避免 setState 触发的不必要 re-render
+  const stateRef = useRef({
+    userScrolled: false,        // 用户已离开底部
+    interacting: false,         // 用户正在交互（wheel / drag / touch / key）
+    lastAutoScroll: 0,          // 上次程序化滚动时间戳
+    prevMessageCount: 0,
+  });
 
-      if (Math.abs(scrollTop - targetScrollTop) > 1) { // Small tolerance
-        // Set the flag and use a timeout to reset it, avoiding race conditions
-        // where a single scrollTo triggers multiple scroll events
-        isAutoScrollingRef.current = true;
-        if (autoScrollTimerRef.current) {
-          clearTimeout(autoScrollTimerRef.current);
-        }
-        // Use longer timeout for smooth scrolling to cover the animation duration (~300ms),
-        // preventing false "user scrolled" detections from animation-triggered scroll events.
-        // Use shorter timeout for instant scrolling to allow quick user scroll detection.
-        const flagTimeout = behavior === 'smooth' ? 300 : 80;
-        autoScrollTimerRef.current = setTimeout(() => {
-          isAutoScrollingRef.current = false;
-          autoScrollTimerRef.current = null;
-        }, flagTimeout);
-
-        scrollElement.scrollTo({
-          top: targetScrollTop,
-          behavior
-        });
-      }
-    }
-  };
-
-  // Smart scroll detection - detect when user manually scrolls
-  useEffect(() => {
-    const scrollElement = parentRef.current;
-    if (!scrollElement) return;
-
-    const handleScroll = () => {
-      // 1. Check if this scroll event was triggered by our auto-scroll
-      // The flag is now reset via timeout, so all events within the timeout window are ignored
-      if (isAutoScrollingRef.current) {
-        lastScrollPositionRef.current = scrollElement.scrollTop;
-        return;
-      }
-
-      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
-
-      // 2. Calculate distance from bottom
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      // Use a forgiving threshold (150px) to account for virtualizer measurement errors
-      const isAtBottom = distanceFromBottom <= 150;
-
-      // 3. Determine user intent
-      // If user is not at bottom, they are viewing history -> Stop auto scroll
-      if (!isAtBottom) {
-        setUserScrolled(true);
-        setShouldAutoScroll(false);
-      } else {
-        // User is at bottom (or scrolled back to bottom) -> Resume auto scroll
-        setUserScrolled(false);
-        setShouldAutoScroll(true);
-      }
-
-      lastScrollPositionRef.current = scrollTop;
-    };
-
-    scrollElement.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      scrollElement.removeEventListener('scroll', handleScroll);
-    };
-  }, []); // Empty deps - event listener only needs to be registered once
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoScrollTimerRef.current) {
-        clearTimeout(autoScrollTimerRef.current);
-      }
-    };
+  const setUserScrolled = useCallback((v: boolean) => {
+    if (stateRef.current.userScrolled === v) return;
+    stateRef.current.userScrolled = v;
+    setUserScrolledStateInternal(v);
   }, []);
 
-  // Track message count changes and auto-enable scroll when new messages appear
-  useEffect(() => {
-    const currentCount = displayableMessages.length;
-    const prevCount = prevMessageCountRef.current;
-    prevMessageCountRef.current = currentCount;
+  const setShouldAutoScroll = useCallback((v: boolean) => {
+    setUserScrolled(!v);
+  }, [setUserScrolled]);
 
-    // When new messages arrive (count increased) and we were near the bottom, re-enable auto-scroll
-    if (currentCount > prevCount && prevCount > 0) {
-      if (parentRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = parentRef.current;
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-        // If user was within a generous range of the bottom, re-enable auto-scroll
-        if (distanceFromBottom <= 300) {
+  const distanceFromBottom = useCallback((): number => {
+    const el = parentRef.current;
+    if (!el) return 0;
+    return el.scrollHeight - el.scrollTop - el.clientHeight;
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    if (stateRef.current.interacting) return; // 交互期禁止程序化滚动
+    stateRef.current.lastAutoScroll = performance.now();
+    // 使用 scrollTop 直接赋值，避免 scrollTo 触发 smooth 兼容差异
+    el.scrollTop = el.scrollHeight - el.clientHeight;
+  }, []);
+
+  // ============== 用户交互检测 ==============
+  // 通过原生事件判定用户意图，不再依赖 scroll 事件 delta（避免动量滚动误判）
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+
+    let releaseTimer: number | undefined;
+    let scrollbarDragging = false;
+
+    const beginInteraction = () => {
+      stateRef.current.interacting = true;
+      if (releaseTimer) {
+        window.clearTimeout(releaseTimer);
+        releaseTimer = undefined;
+      }
+    };
+
+    const scheduleRelease = () => {
+      if (releaseTimer) window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(() => {
+        stateRef.current.interacting = false;
+        // 释放后基于当前位置重新评估是否恢复粘底
+        const dist = distanceFromBottom();
+        if (dist <= NEAR_BOTTOM_RECOVERY) {
           setUserScrolled(false);
-          setShouldAutoScroll(true);
+        } else {
+          setUserScrolled(true);
         }
+      }, INTERACTION_RELEASE_DELAY);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      beginInteraction();
+      // 立即决策：向上滚 → 离开底部
+      if (e.deltaY < 0) {
+        setUserScrolled(true);
       }
-    }
-  }, [displayableMessages.length]);
+      scheduleRelease();
+    };
 
-  // Smart auto-scroll for new messages (initial load or update)
-  // Uses lastMessageHash instead of displayableMessages.length to ensure
-  // content changes during streaming also trigger scrolling
-  useEffect(() => {
-    if (displayableMessages.length > 0 && shouldAutoScroll && !userScrolled) {
-      const timeoutId = setTimeout(() => {
-        // Use rAF to ensure scroll happens after DOM updates are painted
-        requestAnimationFrame(() => performAutoScroll());
-      }, 100);
+    const onTouchStart = () => beginInteraction();
+    const onTouchEnd = () => scheduleRelease();
+    const onTouchCancel = () => scheduleRelease();
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [lastMessageHash, shouldAutoScroll, userScrolled]);
-
-  // Enhanced streaming scroll - use requestAnimationFrame for smoother
-  // rendering-synced scrolling instead of raw setInterval.
-  // rAF ensures scroll operations align with the browser's paint cycle,
-  // reducing jank and improving coordination with the virtualizer.
-  useEffect(() => {
-    if (isLoading && shouldAutoScroll && !userScrolled) {
-      // Immediate scroll on update
-      performAutoScroll('auto');
-
-      // rAF-based loop throttled to ~100ms for rendering-synced scroll updates
-      let rafId: number;
-      let lastScrollTime = 0;
-
-      const tick = (timestamp: number) => {
-        if (timestamp - lastScrollTime >= 100) {
-          performAutoScroll('auto');
-          lastScrollTime = timestamp;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const navKeys = ['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', ' '];
+      if (navKeys.includes(e.key)) {
+        beginInteraction();
+        if (['PageUp', 'Home', 'ArrowUp'].includes(e.key)) {
+          setUserScrolled(true);
         }
-        rafId = requestAnimationFrame(tick);
-      };
-
-      rafId = requestAnimationFrame(tick);
-
-      return () => cancelAnimationFrame(rafId);
-    }
-  }, [isLoading, shouldAutoScroll, userScrolled]);
-
-  // 当消息内容变化时触发额外滚动（确保流式输出时跟踪最新内容）
-  // 进入历史会话/初次渲染时，虚拟列表的测量会在短时间内不断修正高度，导致首次滚动不到真正的底部。
-  // 在非流式状态下提供一个短暂的"粘底"窗口，确保最终停在最新消息处。
-  useEffect(() => {
-    if (isLoading) return;
-    if (!shouldAutoScroll || userScrolled || displayableMessages.length === 0) return;
-
-    let ticks = 0;
-    const intervalId = setInterval(() => {
-      ticks += 1;
-      // Use rAF to sync scroll with the rendering cycle, ensuring the
-      // virtualizer's height re-measurements are applied before scrolling
-      requestAnimationFrame(() => performAutoScroll('auto'));
-      if (ticks >= 8) {
-        clearInterval(intervalId);
+        scheduleRelease();
       }
-    }, 100);
+    };
 
-    return () => clearInterval(intervalId);
-  }, [lastMessageHash, isLoading, shouldAutoScroll, userScrolled, displayableMessages.length]);
+    // 拖动滚动条：mousedown 在容器上但 target 不是子节点（即原生滚动条区域）
+    const onMouseDown = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      // 落点在右侧滚动条区域（容差 20px）
+      const isOnScrollbar = e.clientX > rect.right - 20;
+      if (isOnScrollbar) {
+        scrollbarDragging = true;
+        beginInteraction();
+        const onMouseUp = () => {
+          scrollbarDragging = false;
+          scheduleRelease();
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mouseup', onMouseUp);
+      }
+    };
 
+    // scroll 事件仅作辅助：判断是否仍在底部以"自动恢复粘底"
+    const onScroll = () => {
+      if (scrollbarDragging || stateRef.current.interacting) return;
+      const dist = distanceFromBottom();
+      // 程序化滚动后 50ms 内不参与判定
+      if (performance.now() - stateRef.current.lastAutoScroll < 50) return;
+      if (dist > BOTTOM_THRESHOLD) {
+        if (!stateRef.current.userScrolled) setUserScrolled(true);
+      } else if (dist <= NEAR_BOTTOM_RECOVERY) {
+        if (stateRef.current.userScrolled) setUserScrolled(false);
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: true });
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('touchcancel', onTouchCancel, { passive: true });
+    el.addEventListener('mousedown', onMouseDown);
+    el.addEventListener('keydown', onKeyDown);
+    el.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchCancel);
+      el.removeEventListener('mousedown', onMouseDown);
+      el.removeEventListener('keydown', onKeyDown);
+      el.removeEventListener('scroll', onScroll);
+      if (releaseTimer) window.clearTimeout(releaseTimer);
+    };
+    // 故意空依赖：监听器只装一次，全部读 ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ============== 新消息到达：若仍在底部则跟随 ==============
   useEffect(() => {
-    if (shouldAutoScroll && !userScrolled && displayableMessages.length > 0) {
-      // 使用 requestAnimationFrame 确保在 DOM 更新后滚动
-      const frameId = requestAnimationFrame(() => {
-        performAutoScroll();
+    const count = displayableMessages.length;
+    const prev = stateRef.current.prevMessageCount;
+    stateRef.current.prevMessageCount = count;
+
+    if (count <= prev) return;
+    if (stateRef.current.interacting) return;
+
+    // 仅在已经接近底部时跟随
+    if (distanceFromBottom() <= 300 && !stateRef.current.userScrolled) {
+      // 双 rAF 等待虚拟列表测量
+      const id1 = requestAnimationFrame(() => {
+        const id2 = requestAnimationFrame(scrollToBottom);
+        // @ts-ignore 保存到外层闭包
+        cleanupId = id2;
       });
-      return () => cancelAnimationFrame(frameId);
+      let cleanupId = id1;
+      return () => cancelAnimationFrame(cleanupId);
     }
-  }, [lastMessageHash]);
+  }, [displayableMessages.length, distanceFromBottom, scrollToBottom]);
+
+  // ============== 流式输出粘底循环 ==============
+  useEffect(() => {
+    if (!isLoading) return;
+
+    let rafId = 0;
+    let lastTime = 0;
+
+    const tick = (now: number) => {
+      // 用户交互期暂停粘底
+      if (stateRef.current.interacting || stateRef.current.userScrolled) {
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+      if (now - lastTime >= STREAM_TICK_INTERVAL) {
+        if (distanceFromBottom() > 4) {
+          scrollToBottom();
+        }
+        lastTime = now;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [isLoading, distanceFromBottom, scrollToBottom]);
 
   return {
     parentRef,
     userScrolled,
     setUserScrolled,
-    setShouldAutoScroll
+    setShouldAutoScroll,
   };
 }

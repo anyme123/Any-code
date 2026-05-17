@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { memo, useState, useEffect, useRef, useCallback } from "react";
 import { BrainCircuit, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTypewriter } from "@/hooks/useTypewriter";
@@ -24,7 +24,7 @@ interface ThinkingBlockProps {
  * - 思考输出结束后自动收起（可配置延迟）
  * - 支持手动展开/收起
  */
-export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
+const ThinkingBlockComponent: React.FC<ThinkingBlockProps> = ({
   content,
   isStreaming = false,
   autoCollapseDelay = 2500,
@@ -136,11 +136,11 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
   if (!content) return null;
 
   return (
-    <div className="border-l-2 border-amber-500/30 bg-amber-500/5 rounded-md overflow-hidden my-2">
+    <div className="border-l-2 border-amber-500/30 bg-amber-500/5 rounded-md overflow-hidden">
       {/* Header - 可点击切换 */}
       <button
         onClick={handleToggle}
-        className="w-full cursor-pointer px-3 py-2 text-xs text-amber-700 dark:text-amber-300 font-medium hover:bg-amber-500/10 transition-colors select-none flex items-center gap-2 outline-none text-left"
+        className="w-full cursor-pointer px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300 font-medium hover:bg-amber-500/10 transition-colors select-none flex items-center gap-2 outline-none text-left"
       >
         <BrainCircuit className="w-3.5 h-3.5 opacity-70" />
         <span>Thinking Process</span>
@@ -163,25 +163,36 @@ export const ThinkingBlock: React.FC<ThinkingBlockProps> = ({
         </span>
       </button>
 
-      {/* Content - 可展开/收起 */}
-      <div
-        className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-        )}
-      >
-        <div
-          className="px-3 pb-3 pt-1"
-          onDoubleClick={handleDoubleClick}
-          title={isTyping ? t('thinking.doubleClickSkip') : undefined}
-        >
-          <div className="text-xs text-muted-foreground/80 whitespace-pre-wrap font-mono leading-relaxed max-h-[400px] overflow-y-auto">
-            {renderContent()}
+      {/* Content - 可展开/收起
+          ⚡ 性能优化：移除 max-height transition，避免动画 300ms 期间
+          ResizeObserver 持续触发 measureElement，导致虚拟列表抖动。
+          改为条件渲染 + opacity 渐入，高度只切换一次。 */}
+      {isOpen && (
+        <div className="overflow-hidden animate-in fade-in duration-150">
+          <div
+            className="px-3 pb-3 pt-1"
+            onDoubleClick={handleDoubleClick}
+            title={isTyping ? t('thinking.doubleClickSkip') : undefined}
+          >
+            <div className="text-xs text-muted-foreground/80 whitespace-pre-wrap font-mono leading-relaxed max-h-[400px] overflow-y-auto">
+              {renderContent()}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
+
+ThinkingBlockComponent.displayName = "ThinkingBlock";
+
+export const ThinkingBlock = memo(ThinkingBlockComponent, (prev, next) => {
+  return (
+    prev.content === next.content &&
+    prev.isStreaming === next.isStreaming &&
+    prev.autoCollapseDelay === next.autoCollapseDelay &&
+    prev.typewriterSpeed === next.typewriterSpeed
+  );
+});
 
 export default ThinkingBlock;

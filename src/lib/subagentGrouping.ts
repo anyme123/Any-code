@@ -42,13 +42,13 @@ export type MessageGroup =
  */
 export function hasTaskToolCall(message: ClaudeStreamMessage): boolean {
   if (message.type !== 'assistant') return false;
-  
+
   const content = message.message?.content;
   if (!Array.isArray(content)) return false;
-  
-  return content.some((item: any) => 
-    item.type === 'tool_use' && 
-    item.name?.toLowerCase() === 'task'
+
+  return content.some((item: any) =>
+    item.type === 'tool_use' &&
+    /^(?:task|agent)$/i.test(item.name || '')
   );
 }
 
@@ -60,7 +60,7 @@ export function extractTaskToolUseIds(message: ClaudeStreamMessage): string[] {
 
   const content = message.message?.content as any[];
   return content
-    .filter((item: any) => item.type === 'tool_use' && item.name?.toLowerCase() === 'task')
+    .filter((item: any) => item.type === 'tool_use' && /^(?:task|agent)$/i.test(item.name || ''))
     .map((item: any) => item.id)
     .filter(Boolean);
 }
@@ -75,7 +75,7 @@ export function extractTaskToolDetails(message: ClaudeStreamMessage): Map<string
 
   const content = message.message?.content as any[];
   content
-    .filter((item: any) => item.type === 'tool_use' && item.name?.toLowerCase() === 'task')
+    .filter((item: any) => item.type === 'tool_use' && /^(?:task|agent)$/i.test(item.name || ''))
     .forEach((item: any) => {
       if (item.id) {
         details.set(item.id, {

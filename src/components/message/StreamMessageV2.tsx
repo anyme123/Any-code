@@ -89,6 +89,7 @@ const StreamMessageV2Component: React.FC<StreamMessageV2Props> = ({
           group={group}
           className={className}
           onLinkDetected={onLinkDetected}
+          isStreaming={isStreaming}
         />
       );
     } else if (messageGroup.type === 'aggregated') {
@@ -193,8 +194,23 @@ const StreamMessageV2Component: React.FC<StreamMessageV2Props> = ({
     );
   }
 
-  if (messageType === 'tool_use' || messageType === 'queue-operation') {
+  if (messageType === 'tool_use') {
     return null;
+  }
+
+  if (messageType === 'queue-operation') {
+    if (!claudeSettings?.showSystemInitialization) {
+      return null;
+    }
+    const operation = (message as any).operation;
+    const opLabel = operation === 'enqueue' ? '入队' : operation === 'dequeue' ? '出队' : '队列操作';
+    return (
+      <div className="flex justify-center my-1 opacity-60 select-none">
+        <div className="text-[10px] font-mono text-muted-foreground/70 bg-muted/30 border border-border/40 rounded-full px-2 py-0.5">
+          {opLabel}
+        </div>
+      </div>
+    );
   }
 
   const Renderer = MESSAGE_RENDERERS[messageType];

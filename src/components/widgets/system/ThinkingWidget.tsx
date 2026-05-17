@@ -41,8 +41,21 @@ export const ThinkingWidget: React.FC<ThinkingWidgetProps> = ({
   // 判断是否有内容
   const hasContent = trimmedThinking.length > 0;
 
-  // 翻译思考内容
+  // 🆕 #171: 思考输出翻译开关（默认关闭以节省 tokens 与延迟）
+  const translateThinkingEnabled = React.useMemo(() => {
+    try {
+      return localStorage.getItem('translate_thinking_output') === 'true';
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // 翻译思考内容（仅在开关启用时）
   React.useEffect(() => {
+    if (!translateThinkingEnabled) {
+      setTranslatedThinking(trimmedThinking);
+      return;
+    }
     const translateThinking = async () => {
       if (hasContent) {
         const cacheKey = `thinking-${trimmedThinking.substring(0, 100)}`;
@@ -52,7 +65,7 @@ export const ThinkingWidget: React.FC<ThinkingWidgetProps> = ({
     };
 
     translateThinking();
-  }, [trimmedThinking, hasContent, translateContent]);
+  }, [trimmedThinking, hasContent, translateContent, translateThinkingEnabled]);
 
   // 格式化 Token 使用情况
   const formatThinkingTokens = (usage: any) => {

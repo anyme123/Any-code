@@ -76,9 +76,15 @@ export const WriteWidget: React.FC<WriteWidgetProps> = ({
    */
   const handleOpenInSystem = async () => {
     try {
-      await api.openFileWithDefaultApp(filePath);
+      const editor = (typeof localStorage !== 'undefined' && localStorage.getItem('preferred_editor')) || 'auto';
+      await api.openPathInEditor(filePath, undefined, undefined, editor);
     } catch (error) {
-      console.error('Failed to open file in system:', error);
+      console.error('Failed to open file in editor:', error);
+      try {
+        await api.openFileWithDefaultApp(filePath);
+      } catch (fallbackError) {
+        console.error('Failed to open file with system default:', fallbackError);
+      }
     }
   };
 
