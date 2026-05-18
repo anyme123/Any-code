@@ -650,7 +650,11 @@ export const ClaudeExtensionsManager: React.FC<ClaudeExtensionsManagerProps> = (
                 <Card
                   key={agent.path}
                   className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => api.openFileWithDefaultApp(agent.path)}
+                  onClick={async () => {
+                    const editor = (typeof localStorage !== 'undefined' && localStorage.getItem('preferred_editor')) || 'auto';
+                    try { await api.openPathInEditor(agent.path, undefined, undefined, editor); }
+                    catch { await api.openFileWithDefaultApp(agent.path); }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1">
@@ -728,7 +732,11 @@ export const ClaudeExtensionsManager: React.FC<ClaudeExtensionsManagerProps> = (
                 <Card
                   key={skill.path}
                   className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => api.openFileWithDefaultApp(skill.path)}
+                  onClick={async () => {
+                    const editor = (typeof localStorage !== 'undefined' && localStorage.getItem('preferred_editor')) || 'auto';
+                    try { await api.openPathInEditor(skill.path, undefined, undefined, editor); }
+                    catch { await api.openFileWithDefaultApp(skill.path); }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1">

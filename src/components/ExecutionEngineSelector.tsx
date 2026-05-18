@@ -409,7 +409,7 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
             <span>{getEngineDisplayName()}</span>
             {value.engine === 'codex' && value.codexMode && (
               <span className="text-xs text-muted-foreground">
-                ({value.codexMode === 'read-only' ? '只读' : value.codexMode === 'full-auto' ? '编辑' : '完全访问'})
+                ({value.codexMode === 'read-only' ? '只读' : value.codexMode === 'default' ? '默认' : value.codexMode === 'full-auto' ? '编辑' : '完全访问'})
               </span>
             )}
             {value.engine === 'gemini' && value.geminiApprovalMode && (
@@ -465,13 +465,19 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">执行模式</Label>
                 <Select
-                  value={value.codexMode || 'read-only'}
+                  value={value.codexMode || 'default'}
                   onValueChange={(v) => handleCodexModeChange(v as CodexExecutionMode)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="default">
+                      <div>
+                        <div className="font-medium">默认模式（推荐）</div>
+                        <div className="text-xs text-muted-foreground">每次敏感操作前请求授权</div>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="read-only">
                       <div>
                         <div className="font-medium">只读模式</div>
@@ -481,13 +487,13 @@ export const ExecutionEngineSelector: React.FC<ExecutionEngineSelectorProps> = (
                     <SelectItem value="full-auto">
                       <div>
                         <div className="font-medium">编辑模式</div>
-                        <div className="text-xs text-muted-foreground">允许编辑文件</div>
+                        <div className="text-xs text-muted-foreground">允许编辑文件，无需逐次确认</div>
                       </div>
                     </SelectItem>
                     <SelectItem value="danger-full-access">
                       <div>
                         <div className="font-medium text-destructive">完全访问模式</div>
-                        <div className="text-xs text-muted-foreground">⚠️ 允许网络访问</div>
+                        <div className="text-xs text-muted-foreground">⚠️ 允许网络访问，无沙箱</div>
                       </div>
                     </SelectItem>
                   </SelectContent>

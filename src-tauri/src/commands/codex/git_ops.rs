@@ -581,24 +581,26 @@ pub async fn record_codex_prompt_completed(
         return Ok(());
     }
 
-    // Auto-commit any changes made by AI
-    let commit_message = build_prompt_commit_message("[Codex]", prompt_text.as_deref(), prompt_index);
-    match simple_git::git_commit_changes(&project_path, &commit_message) {
-        Ok(true) => {
-            log::info!(
-                "[Codex Record] Auto-committed changes after prompt #{}",
-                prompt_index
-            );
-        }
-        Ok(false) => {
-            log::debug!(
-                "[Codex Record] No changes to commit after prompt #{}",
-                prompt_index
-            );
-        }
-        Err(e) => {
-            log::warn!("[Codex Record] Failed to auto-commit: {}", e);
-            // Continue anyway
+    if execution_config.disable_auto_commit_after_response {
+        log::info!("[Codex Record] Auto-commit disabled by user setting, skipping git commit");
+    } else {
+        let commit_message = build_prompt_commit_message("[Codex]", prompt_text.as_deref(), prompt_index);
+        match simple_git::git_commit_changes(&project_path, &commit_message) {
+            Ok(true) => {
+                log::info!(
+                    "[Codex Record] Auto-committed changes after prompt #{}",
+                    prompt_index
+                );
+            }
+            Ok(false) => {
+                log::debug!(
+                    "[Codex Record] No changes to commit after prompt #{}",
+                    prompt_index
+                );
+            }
+            Err(e) => {
+                log::warn!("[Codex Record] Failed to auto-commit: {}", e);
+            }
         }
     }
 

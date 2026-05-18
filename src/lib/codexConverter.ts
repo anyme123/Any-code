@@ -187,6 +187,9 @@ export class CodexEventConverter {
   private toolResults: Map<string, { content: string; is_error: boolean }> = new Map();
   /** Stores the latest rate limits from token_count events */
   private latestRateLimits: import('@/types/codex').CodexRateLimits | null = null;
+  /** 累计 reasoning_summary_text.delta 内容，等到 .done 或下一个 turn 才 flush */
+  private reasoningSummaryBuffer: string = '';
+  private reasoningSummaryItemId: string | null = null;
 
   constructor(options?: { defaultModel?: string | null }) {
     if (options?.defaultModel && options.defaultModel.trim() !== '') {
@@ -327,6 +330,14 @@ export class CodexEventConverter {
 
         case 'event_msg':
           return this.convertEventMsg(event as import('@/types/codex').CodexEvent);
+
+        // 处理 Codex Responses API 的 reasoning_summary_text 流式事件
+        // - delta 阶段累积文本到缓冲区，前端展示打字机效果
+        // - done 阶段一次性 flush，标记 source 为 codex_reasoning_summary
+        // 命中条件用 startsWith('response.reasoning_summary_text') 兼容 .delta/.done/可能的子类型
+        case 'response.reasoning_summary_text.delta':
+        case 'response.reasoning_summary_text.done':
+          return this.convertReasoningSummaryEvent(event as any);
 
         case 'turn_context':
           // Turn context events are metadata, don't display
@@ -804,7 +815,64 @@ export class CodexEventConverter {
       timestamp: event.timestamp || new Date().toISOString(),
       receivedAt: event.timestamp || new Date().toISOString(),
       engine: 'codex' as const,
-    };
+      // 标记来源便于前端 ThinkingBlock 渲染时复用
+      metadata: { source: 'codex_reasoning_summary' },
+    } as ClaudeStreamMessage;
+  }
+
+  /**
+   * 处理 Codex Responses API 的 reasoning_summary_text 流式事件
+   *
+   * 行为：
+   * - .delta：累积到 reasoningSummaryBuffer，并以累积值发出 thinking 消息
+   * - .done：以最终 buffer 发出 thinking 消息并清空缓冲
+   *
+   * 复用 Claude 的 thinking 消息形态，挂 metadata.source = 'codex_reasoning_summary'
+   * 让 ThinkingBlock 直接渲染。
+   */
+  private convertReasoningSummaryEvent(event: any): ClaudeStreamMessage | null {
+    const ts = event.timestamp || new Date().toISOString();
+    const eventType: string = event.type || '';
+    const itemId: string | undefined = event.item_id || event.payload?.item_id;
+    const delta: string = event.delta ?? event.payload?.delta ?? '';
+    const fullText: string = event.text ?? event.payload?.text ?? '';
+
+    // 不同 item_id 视作新的一段，flush 缓冲
+    if (itemId && this.reasoningSummaryItemId && itemId !== this.reasoningSummaryItemId) {
+      this.reasoningSummaryBuffer = '';
+    }
+    if (itemId) {
+      this.reasoningSummaryItemId = itemId;
+    }
+
+    if (eventType.endsWith('.done')) {
+      const finalText = fullText || this.reasoningSummaryBuffer;
+      this.reasoningSummaryBuffer = '';
+      this.reasoningSummaryItemId = null;
+      if (!finalText) return null;
+      return {
+        type: 'thinking',
+        content: finalText,
+        timestamp: ts,
+        receivedAt: ts,
+        engine: 'codex' as const,
+        metadata: { source: 'codex_reasoning_summary' },
+      } as ClaudeStreamMessage;
+    }
+
+    // delta 阶段
+    if (delta) {
+      this.reasoningSummaryBuffer += delta;
+    }
+    if (!this.reasoningSummaryBuffer) return null;
+    return {
+      type: 'thinking',
+      content: this.reasoningSummaryBuffer,
+      timestamp: ts,
+      receivedAt: ts,
+      engine: 'codex' as const,
+      metadata: { source: 'codex_reasoning_summary', streaming: true },
+    } as ClaudeStreamMessage;
   }
 
   /**
@@ -895,7 +963,9 @@ export class CodexEventConverter {
       receivedAt: ts,
       engine: 'codex' as const,
       codexMetadata: metadata,
-    };
+      // 标记来源便于前端 ThinkingBlock 渲染时复用
+      metadata: { source: 'codex_reasoning_summary' },
+    } as ClaudeStreamMessage;
   }
 
   /**

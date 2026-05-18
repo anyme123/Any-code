@@ -5,7 +5,7 @@
  * Claude 定价：https://platform.claude.com/docs/en/about-claude/pricing
  * Codex 定价：https://platform.openai.com/docs/pricing (codex-mini-latest)
  * 价格单位：美元/百万 tokens
- * Last Updated: March 2026
+ * Last Updated: May 2026
  */
 
 export interface ModelPricing {
@@ -24,7 +24,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Claude Models (Anthropic)
   // ============================================================================
 
-  // Claude 4.6 Series (Latest - February 2026)
+  // Claude 4.7 Series (Latest - May 2026)
+  'claude-opus-4.7': {
+    input: 5.0,
+    output: 25.0,
+    cacheWrite: 6.25,
+    cacheRead: 0.50
+  },
+  'claude-opus-4.7-1m': {
+    input: 5.0,
+    output: 25.0,
+    cacheWrite: 6.25,
+    cacheRead: 0.50
+  },
+  // Claude Opus 4.7 Fast Mode (faster output, higher cost)
+  'claude-opus-4.7-fast': {
+    input: 30.0,
+    output: 150.0,
+    cacheWrite: 37.5,
+    cacheRead: 3.0
+  },
+
+  // Claude 4.6 Series
   'claude-opus-4.6': {
     input: 5.0,
     output: 25.0,
@@ -39,8 +60,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   // Claude Opus 4.6 Fast Mode (2.5x faster, higher cost)
   'claude-opus-4.6-fast': {
-    input: 30.0,       // $30 / 1M input tokens (<200K context)
-    output: 150.0,     // $150 / 1M output tokens
+    input: 30.0,
+    output: 150.0,
     cacheWrite: 37.5,
     cacheRead: 3.0
   },
@@ -90,6 +111,15 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Source: https://platform.openai.com/docs/pricing (2026-03 官方定价)
   // Note: Codex 使用 ChatGPT 订阅时按会话限制计费，API Key 用户按 token 计费
   // ============================================================================
+
+  // GPT-5.5 - 2026-04 旗舰前沿推理模型
+  // 105k context, OpenRouter 报价
+  'gpt-5.5': {
+    input: 5.0,
+    output: 30.0,
+    cacheWrite: 0,
+    cacheRead: 0.5
+  },
 
   // GPT-5.4 - 最强旗舰模型（2026年3月5日发布）
   // Context: 1.05M tokens, Max Output: 128K tokens, 原生计算机使用
@@ -178,6 +208,37 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheRead: 0.125
   },
 
+  // ========== 2026-05 新增：GPT-5 通用旗舰系列 ==========
+  // gpt-5 - 通用推理旗舰
+  'gpt-5': {
+    input: 1.25,
+    output: 10.00,
+    cacheWrite: 0,
+    cacheRead: 0.125
+  },
+  // gpt-5-mini - 低延迟低成本
+  'gpt-5-mini': {
+    input: 0.25,
+    output: 2.00,
+    cacheWrite: 0,
+    cacheRead: 0.025
+  },
+  // gpt-5-nano - 超低成本
+  'gpt-5-nano': {
+    input: 0.05,
+    output: 0.40,
+    cacheWrite: 0,
+    cacheRead: 0.005
+  },
+
+  // o3 - OpenAI o3 推理模型
+  'o3': {
+    input: 2.00,
+    output: 8.00,
+    cacheWrite: 0,
+    cacheRead: 0.50
+  },
+
   // o4-mini (Codex 底层模型之一)
   // Source: https://platform.openai.com/docs/pricing
   'o4-mini': {
@@ -200,12 +261,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheRead: 0.25
   },
 
+  // Gemini 3.1 Flash-Lite (Preview, 2026-Q2) - 超低延迟低成本
+  'gemini-3.1-flash-lite': {
+    input: 0.25,
+    output: 1.50,
+    cacheWrite: 0,
+    cacheRead: 0.025
+  },
+
   // Gemini 3 Pro Preview
   'gemini-3-pro-preview': {
     input: 2.00,
     output: 12.00,
     cacheWrite: 0.0,
     cacheRead: 0.20
+  },
+
+  // Gemini 3 Flash (Preview) - Gemini 3 Flash 预览版
+  'gemini-3-flash-preview': {
+    input: 0.50,
+    output: 3.00,
+    cacheWrite: 0,
+    cacheRead: 0.05
   },
 
   // Gemini 3 Flash
@@ -296,11 +373,17 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // ============================================================================
 
   if (normalized.includes('gemini')) {
+    if (normalized.includes('gemini-3.1-flash-lite') || normalized.includes('gemini_3_1_flash_lite') || normalized.includes('3.1-flash-lite')) {
+      return MODEL_PRICING['gemini-3.1-flash-lite'];
+    }
     if (normalized.includes('gemini-3.1-pro') || normalized.includes('gemini_3_1_pro') || normalized.includes('3.1-pro')) {
       return MODEL_PRICING['gemini-3.1-pro-preview'];
     }
     if (normalized.includes('gemini-3-pro') || normalized.includes('gemini_3_pro')) {
       return MODEL_PRICING['gemini-3-pro-preview'];
+    }
+    if (normalized.includes('gemini-3-flash-preview') || normalized.includes('gemini_3_flash_preview')) {
+      return MODEL_PRICING['gemini-3-flash-preview'];
     }
     if (normalized.includes('gemini-3-flash') || normalized.includes('gemini_3_flash')) {
       return MODEL_PRICING['gemini-3-flash'];
@@ -325,6 +408,11 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // ============================================================================
   // Codex Models (OpenAI)
   // ============================================================================
+
+  // GPT-5.5 系列（2026-04 旗舰前沿推理）
+  if (normalized.includes('gpt-5.5') || normalized.includes('gpt5.5') || normalized.includes('gpt_5_5') || normalized.includes('5.5')) {
+    return MODEL_PRICING['gpt-5.5'];
+  }
 
   // GPT-5.4 系列（最新旗舰）
   if (normalized.includes('5.4-pro') || normalized.includes('5_4_pro')) {
@@ -367,9 +455,12 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['gpt-5.1-codex'];
   }
 
-  // o4-mini (Codex 底层模型)
+  // o3 / o4-mini (Codex 底层模型)
   if (normalized.includes('o4-mini') || normalized.includes('o4_mini')) {
     return MODEL_PRICING['o4-mini'];
+  }
+  if (normalized === 'o3' || normalized.startsWith('o3-') || normalized.startsWith('o3_') || normalized.includes('-o3') || normalized.includes(' o3')) {
+    return MODEL_PRICING['o3'];
   }
 
   // codex-mini-latest - 默认 CLI 模型
@@ -377,9 +468,20 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['codex-mini-latest'];
   }
 
-  // gpt-5-codex (别名)
+  // GPT-5 通用旗舰系列（gpt-5-mini / gpt-5-nano / gpt-5-codex / gpt-5）
+  // 长前缀优先：mini / nano / codex 必须先于通用 gpt-5 匹配
+  if (normalized.includes('gpt-5-nano') || normalized.includes('gpt_5_nano')) {
+    return MODEL_PRICING['gpt-5-nano'];
+  }
+  if (normalized.includes('gpt-5-mini') || normalized.includes('gpt_5_mini')) {
+    return MODEL_PRICING['gpt-5-mini'];
+  }
   if (normalized.includes('gpt-5-codex') || normalized.includes('gpt_5_codex')) {
     return MODEL_PRICING['gpt-5-codex'];
+  }
+  // 通用 gpt-5 旗舰（必须排在 5.1/5.2/5.3/5.4/5.5 等子型号之后）
+  if (normalized === 'gpt-5' || normalized.startsWith('gpt-5-') || normalized.startsWith('gpt-5@') || normalized === 'gpt5' || normalized.startsWith('gpt_5')) {
+    return MODEL_PRICING['gpt-5'];
   }
 
   // 通用 Codex 匹配 - 默认使用 gpt-5.4
@@ -391,7 +493,15 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // Claude Models (Anthropic)
   // ============================================================================
 
-  // Claude 4.6 Series (Latest)
+  // Claude 4.7 Series (Latest)
+  if (normalized.includes('opus') && (normalized.includes('4.7') || normalized.includes('4-7'))) {
+    if (normalized.includes('fast')) {
+      return MODEL_PRICING['claude-opus-4.7-fast'];
+    }
+    return MODEL_PRICING['claude-opus-4.7'];
+  }
+
+  // Claude 4.6 Series
   if (normalized.includes('opus') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
     if (normalized.includes('fast')) {
       return MODEL_PRICING['claude-opus-4.6-fast'];
@@ -423,7 +533,7 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['claude-haiku-4.5']; // Default to latest
   }
   if (normalized.includes('opus')) {
-    return MODEL_PRICING['claude-opus-4.6']; // Default to latest
+    return MODEL_PRICING['claude-opus-4.7']; // Default to latest
   }
   if (normalized.includes('sonnet')) {
     return MODEL_PRICING['claude-sonnet-4.6']; // Default to latest
@@ -448,6 +558,16 @@ function getGeminiTieredPricing(model: string, promptTokens: number): ModelPrici
   const lower = model.toLowerCase();
   const isOver200k = promptTokens > 200_000;
 
+  // Gemini 3.1 Flash-Lite (Preview) - 不分级，始终单档
+  if (lower.includes('gemini-3.1-flash-lite') || lower.includes('gemini_3_1_flash_lite') || lower.includes('3.1-flash-lite')) {
+    return {
+      input: 0.25,
+      output: 1.50,
+      cacheWrite: 0.0,
+      cacheRead: 0.025,
+    };
+  }
+
   // Gemini 3.1 Pro Preview (Latest)
   if (lower.includes('gemini-3.1-pro') || lower.includes('gemini_3_1_pro') || lower.includes('3.1-pro')) {
     return {
@@ -465,6 +585,16 @@ function getGeminiTieredPricing(model: string, promptTokens: number): ModelPrici
       output: isOver200k ? 18.00 : 12.00,
       cacheWrite: 0.0,
       cacheRead: isOver200k ? 0.40 : 0.20,
+    };
+  }
+
+  // Gemini 3 Flash (Preview) - 不分级，始终单档
+  if (lower.includes('gemini-3-flash-preview') || lower.includes('gemini_3_flash_preview')) {
+    return {
+      input: 0.50,
+      output: 3.00,
+      cacheWrite: 0.0,
+      cacheRead: 0.05,
     };
   }
 

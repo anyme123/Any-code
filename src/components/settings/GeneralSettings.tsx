@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ interface GeneralSettingsProps {
   updateSetting: (key: string, value: any) => void;
   disableRewindGitOps: boolean;
   handleRewindGitOpsToggle: (checked: boolean) => void;
+  disableAutoCommit: boolean;
+  handleAutoCommitToggle: (checked: boolean) => void;
   setToast: (toast: { message: string; type: 'success' | 'error' } | null) => void;
 }
 
@@ -25,6 +27,8 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({
   updateSetting,
   disableRewindGitOps,
   handleRewindGitOpsToggle,
+  disableAutoCommit,
+  handleAutoCommitToggle,
   setToast
 }) => {
   const { t } = useTranslation();
@@ -375,6 +379,94 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({
               checked={disableRewindGitOps}
               onCheckedChange={handleRewindGitOpsToggle}
             />
+          </div>
+
+          {/* Disable Auto-commit After Each AI Response */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="disableAutoCommit">禁用对话后自动 git 提交</Label>
+              <p className="text-xs text-muted-foreground">
+                关闭后，AI 每轮回复都会执行 git commit；开启此项后保留回滚记录但不再自动提交。
+              </p>
+            </div>
+            <Switch
+              id="disableAutoCommit"
+              checked={disableAutoCommit}
+              onCheckedChange={handleAutoCommitToggle}
+            />
+          </div>
+
+          {/* Preferred Editor for code path jumps (#179) */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="preferredEditor">代码路径跳转编辑器</Label>
+              <p className="text-xs text-muted-foreground">
+                点击对话中的文件路径时使用的编辑器（需要相应 CLI 已安装到 PATH）
+              </p>
+            </div>
+            <select
+              id="preferredEditor"
+              className="h-9 px-3 rounded-md border border-input bg-background text-sm"
+              defaultValue={(() => {
+                try { return localStorage.getItem('preferred_editor') || 'auto'; }
+                catch { return 'auto'; }
+              })()}
+              onChange={(e) => {
+                try { localStorage.setItem('preferred_editor', e.target.value); }
+                catch (err) { console.error('Failed to save preferred_editor:', err); }
+              }}
+            >
+              <option value="auto">自动检测</option>
+              <option value="cursor">Cursor</option>
+              <option value="code">VS Code</option>
+              <option value="idea">JetBrains IDEA</option>
+              <option value="webstorm">WebStorm</option>
+              <option value="pycharm">PyCharm</option>
+              <option value="system">系统默认</option>
+            </select>
+          </div>
+
+          {/* #171: 设置导出 */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label>导出设置</Label>
+              <p className="text-xs text-muted-foreground">
+                导出当前 Claude 设置为 JSON 文件（不包含 API Key 等敏感信息）
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const current = await api.getClaudeSettings();
+                  const sanitized: any = JSON.parse(JSON.stringify(current || {}));
+                  if (sanitized?.env && typeof sanitized.env === 'object') {
+                    for (const k of Object.keys(sanitized.env)) {
+                      if (/KEY|TOKEN|SECRET/i.test(k)) {
+                        sanitized.env[k] = '***REDACTED***';
+                      }
+                    }
+                  }
+                  const blob = new Blob([JSON.stringify(sanitized, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `any-code-settings-${new Date().toISOString().slice(0, 10)}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  setToast({ message: '设置已导出', type: 'success' });
+                } catch (err) {
+                  console.error('Failed to export settings:', err);
+                  setToast({ message: '导出失败：' + String(err), type: 'error' });
+                }
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              导出 JSON
+            </Button>
           </div>
 
           {/* Cleanup Period */}

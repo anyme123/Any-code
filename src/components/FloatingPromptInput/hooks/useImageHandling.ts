@@ -165,6 +165,11 @@ export function useImageHandling({
               
               if (result.success && result.file_path) {
                 const base64Content = base64Data.split(',')[1];
+                if (!base64Content) {
+                  console.error('Invalid clipboard image data: missing base64 content');
+                  alert('粘贴图片失败：剪贴板数据格式异常');
+                  return;
+                }
                 const binaryData = atob(base64Content);
                 const bytes = new Uint8Array(binaryData.length);
                 for (let i = 0; i < binaryData.length; i++) {
@@ -172,7 +177,7 @@ export function useImageHandling({
                 }
                 const imageBlob = new Blob([bytes], { type: 'image/png' });
                 const blobUrl = URL.createObjectURL(imageBlob);
-                
+
                 const newAttachment: ImageAttachment = {
                   id: Date.now().toString(),
                   filePath: result.file_path,
@@ -180,7 +185,7 @@ export function useImageHandling({
                   width: 0,
                   height: 0,
                 };
-                
+
                 setImageAttachments(prev => [...prev, newAttachment]);
               } else {
                 console.error('Failed to save clipboard image:', result.error);
@@ -201,9 +206,15 @@ export function useImageHandling({
     }
   };
 
-  // Remove image attachment by ID
+  // Remove image attachment by ID; release blob URL to avoid memory leak
   const handleRemoveImageAttachment = (attachmentId: string) => {
-    setImageAttachments(prev => prev.filter(attachment => attachment.id !== attachmentId));
+    setImageAttachments(prev => {
+      const target = prev.find(a => a.id === attachmentId);
+      if (target?.previewUrl?.startsWith('blob:')) {
+        try { URL.revokeObjectURL(target.previewUrl); } catch { /* ignore */ }
+      }
+      return prev.filter(attachment => attachment.id !== attachmentId);
+    });
   };
 
   // Remove embedded image from prompt

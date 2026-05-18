@@ -8,9 +8,7 @@ use serde_json::Value;
 
 use super::models::{Project, Session};
 use super::paths::{decode_project_path, get_claude_dir, normalize_path_for_comparison};
-use super::session_history::{
-    extract_first_user_message, extract_last_message_timestamp, extract_session_model,
-};
+use super::session_history::extract_session_metadata;
 
 pub struct ProjectStore {
     claude_dir: PathBuf,
@@ -36,23 +34,21 @@ impl ProjectStore {
         let mut hidden_projects = self.load_hidden_projects()?;
 
         if projects_dir.exists() {
-            let entries = fs::read_dir(&projects_dir)
-                .map_err(|e| format!("Failed to read projects directory: {}", e))?;
+            let entries: Vec<_> = fs::read_dir(&projects_dir)
+                .map_err(|e| format!("Failed to read projects directory: {}", e))?
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().is_dir())
+                .collect();
 
-            // Count total valid project directories first
-            let total_project_count = fs::read_dir(&projects_dir)
-                .map(|entries| entries.filter_map(|e| e.ok()).filter(|e| e.path().is_dir()).count())
-                .unwrap_or(0);
+            let total_project_count = entries.len();
 
             // Safety check: if hidden_projects would hide ALL projects, clear the hidden list
-            // This prevents the "no projects found" issue caused by corrupted hidden_projects.json
             if total_project_count > 0 && hidden_projects.len() >= total_project_count {
                 log::warn!(
-                    "Safety check triggered: hidden_projects ({}) >= total projects ({}). Clearing hidden list to prevent all projects from being hidden.",
+                    "Safety check triggered: hidden_projects ({}) >= total projects ({}). Clearing hidden list.",
                     hidden_projects.len(),
                     total_project_count
                 );
-                // Clear the hidden projects file
                 if let Err(e) = self.save_hidden_projects(&[]) {
                     log::error!("Failed to clear hidden projects file: {}", e);
                 }
@@ -60,86 +56,75 @@ impl ProjectStore {
             }
 
             for entry in entries {
-                let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
                 let path = entry.path();
+                let dir_name = match path.file_name().and_then(|n| n.to_str()) {
+                    Some(name) => name.to_string(),
+                    None => continue,
+                };
 
-                if path.is_dir() {
-                    let dir_name = path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .ok_or_else(|| "Invalid directory name".to_string())?;
+                if hidden_projects.contains(&dir_name) {
+                    continue;
+                }
 
-                    if hidden_projects.contains(&dir_name.to_string()) {
-                        log::debug!("Skipping hidden project: {}", dir_name);
-                        continue;
-                    }
+                let created_at = entry.metadata()
+                    .ok()
+                    .and_then(|m| m.modified().ok().or_else(|| m.created().ok()))
+                    .unwrap_or(SystemTime::UNIX_EPOCH)
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
 
-                    let metadata = fs::metadata(&path)
-                        .map_err(|e| format!("Failed to read directory metadata: {}", e))?;
+                let project_path = match get_project_path_from_sessions(&path) {
+                    Ok(path) => path,
+                    Err(_) => decode_project_path(&dir_name),
+                };
 
-                    let created_at = metadata
-                        .created()
-                        .or_else(|_| metadata.modified())
-                        .unwrap_or(SystemTime::UNIX_EPOCH)
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap_or_default()
-                        .as_secs();
+                // Fast session enumeration: only use file metadata, don't read contents
+                let mut sessions = Vec::new();
+                let mut latest_activity = created_at;
 
-                    let project_path = match get_project_path_from_sessions(&path) {
-                        Ok(path) => path,
-                        Err(e) => {
-                            log::warn!(
-                                "Failed to get project path from sessions for {}: {}, falling back to decode",
-                                dir_name,
-                                e
-                            );
-                            decode_project_path(dir_name)
-                        }
-                    };
+                if let Ok(session_entries) = fs::read_dir(&path) {
+                    for session_entry in session_entries.flatten() {
+                        let session_path = session_entry.path();
+                        if session_path.is_file()
+                            && session_path.extension().and_then(|s| s.to_str()) == Some("jsonl")
+                        {
+                            if let Some(session_id) = session_path.file_stem().and_then(|s| s.to_str()) {
+                                // Skip agent files
+                                if session_id.starts_with("agent-") {
+                                    continue;
+                                }
+                                // Use file size as a quick validity check (skip empty/tiny files)
+                                let is_valid = session_entry.metadata()
+                                    .map(|m| m.len() > 50)
+                                    .unwrap_or(false);
 
-                    let mut sessions = Vec::new();
-                    let mut latest_activity = created_at;
+                                if is_valid {
+                                    sessions.push(session_id.to_string());
 
-                    if let Ok(session_entries) = fs::read_dir(&path) {
-                        for session_entry in session_entries.flatten() {
-                            let session_path = session_entry.path();
-                            if session_path.is_file()
-                                && session_path.extension().and_then(|s| s.to_str())
-                                    == Some("jsonl")
-                            {
-                                if let Some(session_id) =
-                                    session_path.file_stem().and_then(|s| s.to_str())
-                                {
-                                    let (first_message, _) =
-                                        extract_first_user_message(&session_path);
-                                    if first_message.is_some() {
-                                        sessions.push(session_id.to_string());
-
-                                        if let Ok(session_metadata) = fs::metadata(&session_path) {
-                                            let session_modified = session_metadata
-                                                .modified()
-                                                .unwrap_or(SystemTime::UNIX_EPOCH)
-                                                .duration_since(SystemTime::UNIX_EPOCH)
-                                                .unwrap_or_default()
-                                                .as_secs();
-
-                                            if session_modified > latest_activity {
-                                                latest_activity = session_modified;
-                                            }
+                                    // Use file modification time for activity tracking
+                                    if let Ok(m) = session_entry.metadata() {
+                                        let modified = m.modified()
+                                            .unwrap_or(SystemTime::UNIX_EPOCH)
+                                            .duration_since(SystemTime::UNIX_EPOCH)
+                                            .unwrap_or_default()
+                                            .as_secs();
+                                        if modified > latest_activity {
+                                            latest_activity = modified;
                                         }
                                     }
                                 }
                             }
                         }
                     }
-
-                    all_projects.push(Project {
-                        id: dir_name.to_string(),
-                        path: project_path,
-                        sessions,
-                        created_at: latest_activity,
-                    });
                 }
+
+                all_projects.push(Project {
+                    id: dir_name,
+                    path: project_path,
+                    sessions,
+                    created_at: latest_activity,
+                });
             }
         } else {
             log::warn!("Projects directory does not exist: {:?}", projects_dir);
@@ -160,14 +145,7 @@ impl ProjectStore {
 
         let project_path = match get_project_path_from_sessions(&project_dir) {
             Ok(path) => path,
-            Err(e) => {
-                log::warn!(
-                    "Failed to get project path from sessions for {}: {}, falling back to decode",
-                    project_id,
-                    e
-                );
-                decode_project_path(project_id)
-            }
+            Err(_) => decode_project_path(project_id),
         };
 
         let mut sessions = Vec::new();
@@ -180,39 +158,29 @@ impl ProjectStore {
 
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("jsonl") {
                 if let Some(session_id) = path.file_stem().and_then(|s| s.to_str()) {
-                    // 🔧 Skip agent-*.jsonl files (subagent sessions)
                     if session_id.starts_with("agent-") {
                         continue;
                     }
-                    let metadata = fs::metadata(&path)
-                        .map_err(|e| format!("Failed to read file metadata: {}", e))?;
 
-                    let created_at = metadata
-                        .created()
-                        .or_else(|_| metadata.modified())
+                    let created_at = entry.metadata()
+                        .ok()
+                        .and_then(|m| m.created().ok().or_else(|| m.modified().ok()))
                         .unwrap_or(SystemTime::UNIX_EPOCH)
                         .duration_since(SystemTime::UNIX_EPOCH)
                         .unwrap_or_default()
                         .as_secs();
 
-                    let (first_message_raw, message_timestamp) = extract_first_user_message(&path);
-                    let last_message_timestamp = extract_last_message_timestamp(&path);
-                    let model = extract_session_model(&path);
+                    // Single-pass metadata extraction (reads file once instead of 3 times)
+                    let metadata = extract_session_metadata(&path);
 
-                    // ✅ Fallback: 如果 first_message 为空，使用默认文本以确保会话能显示
-                    // 这样即使所有用户消息都被过滤掉，会话仍然可见
-                    let first_message = first_message_raw.or_else(|| {
-                        // 检查会话是否真的有内容：
-                        // 1. 有 last_message_timestamp，说明有消息
-                        // 2. 文件大小 > 100 字节（排除几乎空的会话文件）
-                        let has_content = last_message_timestamp.is_some()
+                    let first_message = metadata.first_message.or_else(|| {
+                        let has_content = metadata.last_message_timestamp.is_some()
                             && path.metadata()
                                 .ok()
                                 .map(|m| m.len() > 100)
                                 .unwrap_or(false);
 
                         if has_content {
-                            // 只显示 session_id 的前8位，避免 UI 过长
                             let short_id = if session_id.len() >= 8 {
                                 &session_id[..8]
                             } else {
@@ -220,7 +188,6 @@ impl ProjectStore {
                             };
                             Some(format!("Resumed Session ({}...)", short_id))
                         } else {
-                            // 真正的空会话
                             None
                         }
                     });
@@ -241,9 +208,9 @@ impl ProjectStore {
                         todo_data,
                         created_at,
                         first_message,
-                        message_timestamp,
-                        last_message_timestamp,
-                        model,
+                        message_timestamp: metadata.message_timestamp,
+                        last_message_timestamp: metadata.last_message_timestamp,
+                        model: metadata.model,
                     });
                 }
             }

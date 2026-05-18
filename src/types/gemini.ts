@@ -211,6 +211,21 @@ export const GEMINI_MODELS: GeminiModelInfo[] = [
     contextWindow: 1_000_000,
     isDefault: false,
   },
+  // ========== 2026-05 新增模型 ==========
+  {
+    id: "gemini-3.1-flash-lite",
+    name: "Gemini 3.1 Flash-Lite (Preview)",
+    description: "Ultra-low latency low-cost (2026-Q2)",
+    contextWindow: 1_000_000,
+    isDefault: false,
+  },
+  {
+    id: "gemini-3-flash-preview",
+    name: "Gemini 3 Flash (Preview)",
+    description: "Gemini 3 Flash preview release",
+    contextWindow: 1_000_000,
+    isDefault: false,
+  },
 ];
 
 /**

@@ -2,19 +2,29 @@ import { ReactNode } from "react";
 
 /**
  * Model type definition
+ *
+ * 内置模型使用固定字符串；
+ * 用户自定义模型使用 `custom:<modelId>` 形式（modelId 即实际传给 CLI 的 ANTHROPIC_MODEL）；
+ * `"custom"` 保留作为来自环境变量 ANTHROPIC_MODEL 的兼容入口。
  */
-export type ModelType = "sonnet" | "opus" | "sonnet1m" | "opus1m" | "custom";
+export type ModelType =
+  | "sonnet"
+  | "opus"
+  | "sonnet1m"
+  | "opus1m"
+  | "custom"
+  | `custom:${string}`;
 
 /**
  * Thinking mode type definition
- * Claude 4.6 Adaptive Thinking with effort levels
+ * Claude 4.7 Adaptive Thinking with effort levels
  */
 export type ThinkingMode = "off" | "adaptive";
 
 /**
- * Thinking effort level (Claude 4.6 Adaptive Thinking)
+ * Thinking effort level (Claude 4.7 Adaptive Thinking)
  */
-export type ThinkingEffort = "low" | "medium" | "high" | "max";
+export type ThinkingEffort = "low" | "medium" | "high" | "xhigh" | "max";
 
 /**
  * Model configuration
@@ -24,6 +34,10 @@ export interface ModelConfig {
   name: string;
   description: string;
   icon: ReactNode;
+  /** 自定义模型实际传给 CLI 的模型字符串（ANTHROPIC_MODEL）；内置模型不需要 */
+  modelId?: string;
+  /** 标记是否为用户自定义模型（来自 customModelStorage 或 env 变量） */
+  isCustom?: boolean;
 }
 
 /**
@@ -34,7 +48,7 @@ export interface ThinkingModeConfig {
   effort?: ThinkingEffort; // Effort level for adaptive thinking
   name: string;
   description: string;
-  level: number; // 0-4 for visual indicator
+  level: number; // 0-5 for visual indicator
 }
 
 /**

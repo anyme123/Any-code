@@ -5,6 +5,7 @@ import { SystemMessage } from "./SystemMessage";
 import { ResultMessage } from "./ResultMessage";
 import { SummaryMessage } from "./SummaryMessage";
 import { SubagentMessageGroup } from "./SubagentMessageGroup";
+import { GroundingSourcesCard, type GroundingSource } from "@/components/widgets/grounding/GroundingSourcesCard";
 import type { ClaudeStreamMessage } from '@/types/claude';
 import type { RewindMode } from '@/lib/api';
 import type { MessageGroup } from '@/lib/subagentGrouping';
@@ -89,6 +90,7 @@ const StreamMessageV2Component: React.FC<StreamMessageV2Props> = ({
           group={group}
           className={className}
           onLinkDetected={onLinkDetected}
+          isStreaming={isStreaming}
         />
       );
     } else if (messageGroup.type === 'aggregated') {
@@ -193,8 +195,23 @@ const StreamMessageV2Component: React.FC<StreamMessageV2Props> = ({
     );
   }
 
-  if (messageType === 'tool_use' || messageType === 'queue-operation') {
+  if (messageType === 'tool_use') {
     return null;
+  }
+
+  if (messageType === 'queue-operation') {
+    if (!claudeSettings?.showSystemInitialization) {
+      return null;
+    }
+    const operation = (message as any).operation;
+    const opLabel = operation === 'enqueue' ? '入队' : operation === 'dequeue' ? '出队' : '队列操作';
+    return (
+      <div className="flex justify-center my-1 opacity-60 select-none">
+        <div className="text-[10px] font-mono text-muted-foreground/70 bg-muted/30 border border-border/40 rounded-full px-2 py-0.5">
+          {opLabel}
+        </div>
+      </div>
+    );
   }
 
   const Renderer = MESSAGE_RENDERERS[messageType];
@@ -225,6 +242,23 @@ const StreamMessageV2Component: React.FC<StreamMessageV2Props> = ({
   } : messageType === 'system' ? {
     claudeSettings
   } : {};
+
+  // Gemini grounding 来源：由 geminiConverter 写入 message.groundingSources
+  // 仅对 assistant 消息追加渲染，避免和 user/result 消息混淆
+  const groundingSources: GroundingSource[] | undefined = (message as any).groundingSources;
+  const shouldRenderGrounding =
+    messageType === 'assistant' &&
+    Array.isArray(groundingSources) &&
+    groundingSources.length > 0;
+
+  if (shouldRenderGrounding) {
+    return (
+      <>
+        <Renderer {...commonProps} {...specificProps} />
+        <GroundingSourcesCard sources={groundingSources!} />
+      </>
+    );
+  }
 
   return <Renderer {...commonProps} {...specificProps} />;
 };

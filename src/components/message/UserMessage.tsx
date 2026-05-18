@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Undo2, AlertTriangle, ChevronDown, ChevronUp, User } from "lucide-react";
+import { Undo2, AlertTriangle, ChevronDown, ChevronUp, User, GitBranch } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import { MessageImagePreview, extractImagesFromContent, extractImagePathsFromText } from "./MessageImagePreview";
 import { MessageActions } from "./MessageActions";
@@ -499,28 +499,50 @@ export const UserMessage: React.FC<UserMessageProps> = ({
         </div>
         </div>
 
-        {/* Right Column: User Avatar with Tooltip */}
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex-shrink-0 mt-0.5 select-none cursor-default">
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 dark:bg-indigo-500/20 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 transition-colors">
-                  <User className="w-4 h-4" />
+        {/* Right Column: Avatar + persistent Checkpoint badge */}
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="mt-0.5 select-none cursor-default">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 dark:bg-indigo-500/20 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 transition-colors">
+                    <User className="w-4 h-4" />
+                  </div>
                 </div>
-              </div>
-            </TooltipTrigger>
-            {((message as any).sentAt || (message as any).timestamp) && (
-              <TooltipContent side="left" className="text-[11px]">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium">You</span>
-                  <span className="text-muted-foreground">
-                    {formatTimestamp((message as any).sentAt || (message as any).timestamp)}
-                  </span>
-                </div>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+              </TooltipTrigger>
+              {((message as any).sentAt || (message as any).timestamp) && (
+                <TooltipContent side="left" className="text-[11px]">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium">You</span>
+                    <span className="text-muted-foreground">
+                      {formatTimestamp((message as any).sentAt || (message as any).timestamp)}
+                    </span>
+                  </div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Checkpoint 标记：持久可见的 #N 锚点，点击直接打开回滚选择器 */}
+          {showRevertButton && !isSkills && !isCommandOutput && !isSlashCommand && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleRevertClick}
+                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border/40 bg-muted/20 hover:bg-muted/50 hover:border-border text-[10px] font-mono text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    <GitBranch className="w-2.5 h-2.5" />
+                    <span>#{(promptIndex ?? 0) + 1}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="text-[11px]">
+                  {t('message.checkpointHint', { defaultValue: 'Checkpoint · 点击回滚到此处' })}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </div>
     </div>
 

@@ -56,7 +56,7 @@ use commands::prompt_tracker::{
     record_prompt_sent, revert_to_prompt,
 };
 use commands::provider::{
-    add_provider_config, clear_provider_config, delete_provider_config,
+    add_provider_config, clear_provider_config, delete_provider_config, fetch_anthropic_models,
     get_current_provider_config, get_provider_config, get_provider_presets, query_provider_usage,
     reorder_provider_configs, switch_provider_config, test_provider_connection, update_provider_config,
 };
@@ -129,7 +129,7 @@ use commands::extensions::{
     open_commands_directory, open_plugins_directory, open_skills_directory, read_skill,
     read_subagent, reinstall_plugin, toggle_plugin_enabled, uninstall_plugin,
 };
-use commands::file_operations::{open_directory_in_explorer, open_file_with_default_app};
+use commands::file_operations::{open_directory_in_explorer, open_file_with_default_app, open_path_in_editor};
 use commands::gemini::{
     add_gemini_provider_config,
     cancel_gemini,
@@ -184,6 +184,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(
             WindowStatePlugin::default()
                 .with_state_flags(tauri_plugin_window_state::StateFlags::all())
@@ -402,6 +403,7 @@ fn main() {
             switch_provider_config,
             clear_provider_config,
             test_provider_connection,
+            fetch_anthropic_models,
             add_provider_config,
             update_provider_config,
             delete_provider_config,
@@ -460,6 +462,7 @@ fn main() {
             // File Operations
             open_directory_in_explorer,
             open_file_with_default_app,
+            open_path_in_editor,
             // Git Statistics
             get_git_diff_stats,
             get_session_code_changes,

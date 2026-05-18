@@ -38,53 +38,65 @@ export type MessageGroup =
   | { type: 'aggregated'; messages: ClaudeStreamMessage[]; index: number }; // 新增：聚合消息组
 
 /**
+ * 内部辅助：判断 content item 是否为 task / agent 类型的 tool_use
+ * 缓存 lower-case 字符串，避免重复 toLowerCase
+ */
+function isTaskOrAgentToolUse(item: any): boolean {
+  if (!item || item.type !== 'tool_use') return false;
+  const name = item.name;
+  if (typeof name !== 'string' || name.length === 0) return false;
+  const lower = name.toLowerCase();
+  return lower === 'task' || lower === 'agent';
+}
+
+/**
  * 检查消息是否包含 Task 工具调用
  */
 export function hasTaskToolCall(message: ClaudeStreamMessage): boolean {
   if (message.type !== 'assistant') return false;
-  
+
   const content = message.message?.content;
   if (!Array.isArray(content)) return false;
-  
-  return content.some((item: any) => 
-    item.type === 'tool_use' && 
-    item.name?.toLowerCase() === 'task'
-  );
-}
 
-/**
- * 从消息中提取 Task 工具的 ID
- */
-export function extractTaskToolUseIds(message: ClaudeStreamMessage): string[] {
-  if (!hasTaskToolCall(message)) return [];
-
-  const content = message.message?.content as any[];
-  return content
-    .filter((item: any) => item.type === 'tool_use' && item.name?.toLowerCase() === 'task')
-    .map((item: any) => item.id)
-    .filter(Boolean);
+  return content.some(isTaskOrAgentToolUse);
 }
 
 /**
  * 从消息中提取 Task 工具的详细信息（包括 subagent_type）
+ * 同时返回 ids 列表，避免对 content 数组进行二次扫描
  */
-export function extractTaskToolDetails(message: ClaudeStreamMessage): Map<string, { subagentType?: string }> {
-  const details = new Map<string, { subagentType?: string }>();
+export function extractTaskToolDetails(
+  message: ClaudeStreamMessage
+): Map<string, { subagentType?: string }> & { __ids?: string[] } {
+  const details = new Map<string, { subagentType?: string }>() as Map<string, { subagentType?: string }> & { __ids?: string[] };
 
-  if (!hasTaskToolCall(message)) return details;
+  if (message.type !== 'assistant') return details;
 
-  const content = message.message?.content as any[];
-  content
-    .filter((item: any) => item.type === 'tool_use' && item.name?.toLowerCase() === 'task')
-    .forEach((item: any) => {
-      if (item.id) {
-        details.set(item.id, {
-          subagentType: item.input?.subagent_type,
-        });
-      }
-    });
+  const content = message.message?.content;
+  if (!Array.isArray(content)) return details;
 
+  const ids: string[] = [];
+  for (const item of content as any[]) {
+    if (!isTaskOrAgentToolUse(item)) continue;
+    if (item.id) {
+      details.set(item.id, {
+        subagentType: item.input?.subagent_type,
+      });
+      ids.push(item.id);
+    }
+  }
+
+  // 把 ids 附在返回的 Map 上，供同时需要 ids 的调用方复用，避免再次扫描
+  details.__ids = ids;
   return details;
+}
+
+/**
+ * 从消息中提取 Task 工具的 ID（委托给 extractTaskToolDetails，避免重复遍历）
+ */
+export function extractTaskToolUseIds(message: ClaudeStreamMessage): string[] {
+  const details = extractTaskToolDetails(message);
+  return details.__ids ?? [];
 }
 
 /**
@@ -188,11 +200,11 @@ export function groupMessages(messages: ClaudeStreamMessage[]): MessageGroup[] {
   const taskSubagentTypes = new Map<string, string | undefined>();
 
   messages.forEach((message, index) => {
-    const taskIds = extractTaskToolUseIds(message);
+    // 一次扫描同时拿到 ids 与 detail，避免对 content 数组的二次遍历
+    const details = extractTaskToolDetails(message);
+    const taskIds = details.__ids ?? [];
     if (taskIds.length > 0) {
       indexToTaskIds.set(index, taskIds);
-      // 提取详细信息（包括 subagent_type）
-      const details = extractTaskToolDetails(message);
       taskIds.forEach(taskId => {
         taskToolUseMap.set(taskId, { message, index });
         const detail = details.get(taskId);
@@ -236,14 +248,6 @@ export function groupMessages(messages: ClaudeStreamMessage[]): MessageGroup[] {
     }
   });
 
-  // 标记所有子代理消息的索引（避免重复渲染）
-  messages.forEach((message, index) => {
-    const parentId = getParentToolUseId(message);
-    if (parentId && subagentGroups.has(parentId)) {
-      processedIndices.add(index);
-    }
-  });
-
   // 记录已添加的 Task 组（避免重复）
   const addedTaskGroups = new Set<string>();
 
@@ -251,9 +255,13 @@ export function groupMessages(messages: ClaudeStreamMessage[]): MessageGroup[] {
   const intermediateGroups: MessageGroup[] = [];
 
   // 第三遍：构建初步的分组列表
+  // 同时把"标记子代理消息索引"并入此次遍历，避免再次扫描整个 messages 数组
   messages.forEach((message, index) => {
-    // 跳过已被归入子代理组的消息
-    if (processedIndices.has(index)) {
+    // 行内标记：若当前消息有 parent_tool_use_id 且属于已知子代理组，
+    // 则记入 processedIndices，并跳过渲染
+    const parentId = getParentToolUseId(message);
+    if (parentId && subagentGroups.has(parentId)) {
+      processedIndices.add(index);
       return;
     }
 

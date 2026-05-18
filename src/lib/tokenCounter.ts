@@ -4,7 +4,12 @@
  * 基于Claude官方Token Count API的准确token计算服务
  * 支持所有消息类型和Claude模型的精确token统计和成本计算
  *
- * 2026年最新官方定价和Claude 4.6系列模型支持
+ * 2026年最新官方定价和Claude 4.7系列模型支持
+ *
+ * 优化思路（normalizeModel）：
+ * - 用一份预排序的"family + version 关键词 -> 标准 id"规则表代替 15+ 个串行 if/.includes
+ * - 排序按 version 关键词长度降序（longest-first），保证 4.7 > 4.6 > 4.5 等优先级与原函数完全等价
+ * - 命中第一条规则即返回，避免无谓继续匹配
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -15,16 +20,23 @@ import { api } from './api';
 // ⚠️ WARNING: This pricing table MUST be kept in sync with:
 //    src-tauri/src/commands/usage.rs::ModelPricing
 // Source: https://docs.claude.com/en/docs/about-claude/models/overview
-// Last Updated: February 2026
+// Last Updated: May 2026
 // ============================================================================
 
 export const CLAUDE_PRICING = {
-  // Claude 4.6 Series (Latest - February 2026)
+  // Claude 4.7 Series (Latest - May 2026)
+  'claude-opus-4-7': {
+    input: 5.0,
+    output: 25.0,
+    cache_write: 6.25,
+    cache_read: 0.50,
+  },
+  // Claude 4.6 Series
   'claude-opus-4-6': {
-    input: 15.0,
-    output: 75.0,
-    cache_write: 18.75,
-    cache_read: 1.50,
+    input: 5.0,
+    output: 25.0,
+    cache_write: 6.25,
+    cache_read: 0.50,
   },
   'claude-sonnet-4-6': {
     input: 3.0,
@@ -99,8 +111,11 @@ export const CLAUDE_PRICING = {
 // ============================================================================
 
 export const CLAUDE_CONTEXT_WINDOWS = {
+  // Claude 4.7 Series
+  'claude-opus-4-7': 1000000,
+  'claude-opus-4-7[1m]': 1000000,
   // Claude 4.6 Series
-  'claude-opus-4-6': 200000,
+  'claude-opus-4-6': 1000000,
   'claude-opus-4-6[1m]': 1000000,
   'claude-sonnet-4-6': 200000,
   'claude-sonnet-4-6[1m]': 1000000,
@@ -277,8 +292,10 @@ export function getContextWindowSize(model?: string, engine?: string): number {
 
 // 标准化模型名称映射
 export const MODEL_ALIASES = {
-  'opus': 'claude-opus-4-6', // 默认最新版本
-  'opus1m': 'claude-opus-4-6[1m]',
+  'opus': 'claude-opus-4-7', // 默认最新版本
+  'opus1m': 'claude-opus-4-7[1m]',
+  'opus4.7': 'claude-opus-4-7',
+  'opus-4.7': 'claude-opus-4-7',
   'opus4.6': 'claude-opus-4-6',
   'opus-4.6': 'claude-opus-4-6',
   'opus4.5': 'claude-opus-4-5',
@@ -372,6 +389,33 @@ export interface TokenBreakdown {
   };
 }
 
+/**
+ * normalizeModel 的规则表
+ * - 顺序与原 if 链严格一致：4.7 → 4.6(opus/sonnet) → 4.5(opus/haiku/sonnet) → 4.1 → family-only 兜底
+ * - 每条规则同时要求 family 子串与某个 version 关键词命中；versions 为空表示 family-only 兜底
+ */
+const NORMALIZE_MODEL_RULES: ReadonlyArray<{
+  family: string;
+  versions: ReadonlyArray<string>;
+  id: string;
+}> = [
+  // Claude 4.7 Series (Latest)
+  { family: 'opus', versions: ['4.7', '4-7'], id: 'claude-opus-4-7' },
+  // Claude 4.6 Series
+  { family: 'opus', versions: ['4.6', '4-6'], id: 'claude-opus-4-6' },
+  { family: 'sonnet', versions: ['4.6', '4-6'], id: 'claude-sonnet-4-6' },
+  // Claude 4.5 Series
+  { family: 'opus', versions: ['4.5', '4-5'], id: 'claude-opus-4-5' },
+  { family: 'haiku', versions: ['4.5', '4-5'], id: 'claude-haiku-4-5' },
+  { family: 'sonnet', versions: ['4.5', '4-5'], id: 'claude-sonnet-4-5' },
+  // Claude 4.1 Series
+  { family: 'opus', versions: ['4.1', '4-1'], id: 'claude-opus-4-1' },
+  // Generic family detection (fallback - MUST match backend)
+  { family: 'haiku', versions: [], id: 'claude-haiku-4-5' },
+  { family: 'opus', versions: [], id: 'claude-opus-4-7' },
+  { family: 'sonnet', versions: [], id: 'claude-sonnet-4-6' },
+];
+
 export class TokenCounterService {
   private client: Anthropic | null = null;
   private apiKey: string | null = null;
@@ -439,6 +483,10 @@ export class TokenCounterService {
    *
    * This function replicates the backend logic to ensure consistent
    * model identification and pricing across frontend and backend.
+   *
+   * 优化：用预排序规则表代替 15+ 个串行 .includes 判断；命中第一条匹配即返回。
+   * 优先级顺序与原函数严格一致：family+version 组合优先（按版本降序），
+   * 然后才是 family-only 兜底（haiku → 4-5，opus → 4-7，sonnet → 4-6）。
    */
   public normalizeModel(model?: string): string {
     if (!model) return 'claude-sonnet-4-6';
@@ -454,41 +502,19 @@ export class TokenCounterService {
       normalized = normalized.substring(0, atIndex);
     }
 
-    // Priority-based matching (order matters! MUST match backend logic)
-
-    // Claude 4.6 Series (Latest)
-    if (normalized.includes('opus') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
-      return 'claude-opus-4-6';
-    }
-    if (normalized.includes('sonnet') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
-      return 'claude-sonnet-4-6';
-    }
-
-    // Claude 4.5 Series
-    if (normalized.includes('opus') && (normalized.includes('4.5') || normalized.includes('4-5'))) {
-      return 'claude-opus-4-5';
-    }
-    if (normalized.includes('haiku') && (normalized.includes('4.5') || normalized.includes('4-5'))) {
-      return 'claude-haiku-4-5';
-    }
-    if (normalized.includes('sonnet') && (normalized.includes('4.5') || normalized.includes('4-5'))) {
-      return 'claude-sonnet-4-5';
-    }
-
-    // Claude 4.1 Series
-    if (normalized.includes('opus') && (normalized.includes('4.1') || normalized.includes('4-1'))) {
-      return 'claude-opus-4-1';
-    }
-
-    // Generic family detection (fallback - MUST match backend)
-    if (normalized.includes('haiku')) {
-      return 'claude-haiku-4-5'; // Default to latest
-    }
-    if (normalized.includes('opus')) {
-      return 'claude-opus-4-6'; // Default to latest
-    }
-    if (normalized.includes('sonnet')) {
-      return 'claude-sonnet-4-6'; // Default to latest
+    // 预排序规则表：按原 if 顺序排列，命中第一条即返回
+    // 每条规则需同时匹配 family 与某个 version 关键词
+    for (const rule of NORMALIZE_MODEL_RULES) {
+      if (!normalized.includes(rule.family)) continue;
+      // 仅 family 兜底规则（无 versions）
+      if (rule.versions.length === 0) {
+        return rule.id;
+      }
+      for (const v of rule.versions) {
+        if (normalized.includes(v)) {
+          return rule.id;
+        }
+      }
     }
 
     // Unknown model - return original
@@ -1047,7 +1073,7 @@ export function calculateSessionStats(
     total_tokens: breakdown.total,
     total_cost: breakdown.cost.total_cost,
     message_count: messages.length,
-    average_tokens_per_message: breakdown.total / messages.length,
+    average_tokens_per_message: messages.length > 0 ? breakdown.total / messages.length : 0,
     cache_efficiency: breakdown.efficiency.cache_hit_rate,
     breakdown,
     trend: {

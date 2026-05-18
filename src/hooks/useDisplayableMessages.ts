@@ -19,6 +19,23 @@ interface DisplayableMessagesOptions {
 }
 
 /**
+ * 这些工具有专用的 Widget，结果不需要单独显示
+ * 模块级 Set，避免每次 filter 重建数组
+ */
+const TOOLS_WITH_WIDGETS = new Set<string>([
+  'task',
+  'edit',
+  'multiedit',
+  'todowrite',
+  'ls',
+  'read',
+  'glob',
+  'bash',
+  'write',
+  'grep',
+]);
+
+/**
  * 检查消息是否为启动期间的系统警告消息
  * 这些消息通常在 Gemini 等引擎初始化 MCP 客户端时产生
  */
@@ -116,20 +133,30 @@ export function useDisplayableMessages(
   const hideStartupWarnings = options.hideStartupWarnings !== false;
 
   return useMemo(() => {
-    // 如果需要隐藏 Warmup，先找到所有 Warmup 消息的索引
+    // 单次正向扫描：构建 tool_use_id -> { name } 的索引，并收集 Warmup 索引
+    // 通过一次遍历同时完成原本的两遍循环，整体复杂度从 O(n²) 降到 O(n)
+    const toolUseIndex = new Map<string, { name: string }>();
     const warmupIndices = new Set<number>();
 
-    if (hideWarmupMessages) {
-      messages.forEach((msg, idx) => {
-        if (isWarmupMessage(msg)) {
-          warmupIndices.add(idx);
-          // 找到紧跟其后的 assistant 回复（Warmup 的响应）
-          if (idx + 1 < messages.length && messages[idx + 1].type === 'assistant') {
-            warmupIndices.add(idx + 1);
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+
+      // 收集 assistant 消息中的所有 tool_use
+      if (msg.type === 'assistant' && msg.message?.content && Array.isArray(msg.message.content)) {
+        for (const item of msg.message.content as any[]) {
+          if (item.type === 'tool_use' && item.id) {
+            toolUseIndex.set(item.id, { name: item.name || '' });
           }
         }
-      });
-      
+      }
+
+      // Warmup 检测并入主扫描
+      if (hideWarmupMessages && isWarmupMessage(msg)) {
+        warmupIndices.add(i);
+        if (i + 1 < messages.length && messages[i + 1].type === 'assistant') {
+          warmupIndices.add(i + 1);
+        }
+      }
     }
 
     return messages.filter((message, index) => {
@@ -174,44 +201,17 @@ export function useDisplayableMessages(
               let willBeSkipped = false;
 
               if (content.tool_use_id) {
-                // 向前查找匹配的 tool_use
-                for (let i = index - 1; i >= 0; i--) {
-                  const prevMsg = messages[i];
+                // O(1) 查询：通过预先构建的索引获取 tool_use 名称
+                const toolUse = toolUseIndex.get(content.tool_use_id);
+
+                if (toolUse) {
+                  const toolName = toolUse.name?.toLowerCase();
 
                   if (
-                    prevMsg.type === 'assistant' &&
-                    prevMsg.message?.content &&
-                    Array.isArray(prevMsg.message.content)
+                    (toolName && TOOLS_WITH_WIDGETS.has(toolName)) ||
+                    toolUse.name?.startsWith('mcp__')
                   ) {
-                    const toolUse = prevMsg.message.content.find(
-                      (c: any) => c.type === 'tool_use' && c.id === content.tool_use_id
-                    );
-
-                    if (toolUse) {
-                      const toolName = toolUse.name?.toLowerCase();
-
-                      // 这些工具有专用的 Widget，结果不需要单独显示
-                      const toolsWithWidgets = [
-                        'task',
-                        'edit',
-                        'multiedit',
-                        'todowrite',
-                        'ls',
-                        'read',
-                        'glob',
-                        'bash',
-                        'write',
-                        'grep'
-                      ];
-
-                      if (
-                        toolsWithWidgets.includes(toolName) ||
-                        toolUse.name?.startsWith('mcp__')
-                      ) {
-                        willBeSkipped = true;
-                      }
-                      break;
-                    }
+                    willBeSkipped = true;
                   }
                 }
               }

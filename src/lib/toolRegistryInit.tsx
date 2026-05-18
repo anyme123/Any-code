@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { toolRegistry, ToolRenderer, ToolRenderProps } from './toolRegistry';
+import { cn } from './utils';
 
 // ✅ 已迁移组件：从新的 widgets 目录导入
 import {
@@ -603,11 +604,12 @@ export function initializeToolRegistry(): void {
     // Task - 子代理工具（Claude Code 特有）
     {
       name: 'task',
+      pattern: /^(?:task|agent)$/i,
       render: createToolAdapter(TaskWidget, (props) => ({
         description: props.input?.description ?? props.result?.content?.description,
         prompt: props.input?.prompt ?? props.result?.content?.prompt,
         result: props.result,
-        subagentType: props.input?.subagent_type ?? props.result?.content?.subagent_type,
+        subagentType: props.input?.subagent_type ?? props.input?.subagentType ?? props.result?.content?.subagent_type,
       })),
       description: 'Claude Code 子代理工具',
     },
@@ -762,6 +764,175 @@ export function initializeToolRegistry(): void {
         result: props.result,
       })),
       description: '用户问题询问工具',
+    },
+
+    // ToolSearch - 工具搜索
+    {
+      name: 'toolsearch',
+      pattern: /^tool[-_]?search$/i,
+      render: (props) => {
+        const query = props.input?.query || '';
+        return (
+          <div className="rounded-lg border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">🔍 工具搜索</span>
+              {query && <span className="font-mono truncate max-w-[300px]">{query}</span>}
+            </div>
+          </div>
+        );
+      },
+      description: '工具搜索',
+    },
+
+    // SendMessage - 代理间通信
+    {
+      name: 'sendmessage',
+      pattern: /^send[-_]?message$/i,
+      render: (props) => {
+        const to = props.input?.to || '';
+        return (
+          <div className="rounded-lg border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">💬 发送消息</span>
+              {to && <span>→ <span className="font-mono">{to}</span></span>}
+            </div>
+          </div>
+        );
+      },
+      description: '代理间消息通信',
+    },
+
+    // Skill - 技能调用（Claude Code Skills）
+    {
+      name: 'skill',
+      pattern: /^skill$/i,
+      render: (props) => {
+        const skill = props.input?.skill || props.input?.name || '';
+        const args = props.input?.args;
+        const isError = props.result?.is_error;
+        const hasResult = props.result?.content !== undefined && props.result?.content !== null;
+        const resultText = hasResult
+          ? (typeof props.result?.content === 'string'
+              ? props.result.content
+              : JSON.stringify(props.result?.content, null, 2))
+          : '';
+
+        return (
+          <div className="rounded-lg border border-border/60 bg-card overflow-hidden my-1">
+            <div className="flex items-center gap-2 px-3 py-2 bg-purple-500/5 border-b border-border/40">
+              <div className="flex items-center justify-center w-5 h-5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 text-xs">
+                S
+              </div>
+              <span className="text-xs font-medium text-foreground/90">Skill</span>
+              {skill && (
+                <span className="text-xs font-mono text-purple-700 dark:text-purple-300 truncate">
+                  {skill}
+                </span>
+              )}
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {props.isStreaming ? '运行中…' : isError ? '失败' : hasResult ? '完成' : '已触发'}
+              </span>
+            </div>
+            {args && (
+              <div className="px-3 py-1.5 text-[11px] font-mono text-muted-foreground/80 break-all border-b border-border/30">
+                args: {typeof args === 'string' ? args : JSON.stringify(args)}
+              </div>
+            )}
+            {hasResult && resultText && (
+              <pre className={cn(
+                "px-3 py-2 text-[11px] font-mono whitespace-pre-wrap break-words max-h-[200px] overflow-y-auto",
+                isError ? "text-destructive" : "text-foreground/80"
+              )}>
+                {resultText}
+              </pre>
+            )}
+          </div>
+        );
+      },
+      description: 'Claude Code Skill 调用',
+    },
+
+    // Monitor - 进程监控
+    {
+      name: 'monitor',
+      pattern: /^monitor$/i,
+      render: (_props) => {
+        return (
+          <div className="rounded-lg border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">📡 进程监控</span>
+            </div>
+          </div>
+        );
+      },
+      description: '进程监控工具',
+    },
+
+    // ScheduleWakeup - 定时唤醒
+    {
+      name: 'schedulewakeup',
+      pattern: /^schedule[-_]?wakeup$/i,
+      render: (props) => {
+        const delay = props.input?.delaySeconds;
+        const reason = props.input?.reason || '';
+        return (
+          <div className="rounded-lg border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">⏰ 定时唤醒</span>
+              {delay && <span>{delay}s</span>}
+              {reason && <span className="truncate max-w-[200px]">· {reason}</span>}
+            </div>
+          </div>
+        );
+      },
+      description: '定时唤醒工具',
+    },
+
+    // NotebookEdit - Notebook 编辑
+    {
+      name: 'notebookedit',
+      pattern: /^notebook[-_]?edit$/i,
+      render: createToolAdapter(EditWidget, (props) => ({
+        file_path: props.input?.notebook || props.input?.file_path || '',
+        old_string: '',
+        new_string: props.input?.new_source || props.input?.content || '',
+        result: props.result,
+      })),
+      description: 'Notebook 编辑工具',
+    },
+
+    // Worktree 管理
+    {
+      name: 'enterworktree',
+      pattern: /^(?:enter|exit)[-_]?worktree$/i,
+      render: (props) => {
+        const isEnter = /enter/i.test(props.toolName);
+        return (
+          <div className="rounded-lg border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">🌲 {isEnter ? '进入' : '退出'} Worktree</span>
+            </div>
+          </div>
+        );
+      },
+      description: 'Git Worktree 管理',
+    },
+
+    // Cron 管理
+    {
+      name: 'croncreate',
+      pattern: /^cron[-_]?(?:create|delete|list)$/i,
+      render: (props) => {
+        const action = /create/i.test(props.toolName) ? '创建' : /delete/i.test(props.toolName) ? '删除' : '列表';
+        return (
+          <div className="rounded-lg border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">🕐 定时任务{action}</span>
+            </div>
+          </div>
+        );
+      },
+      description: '定时任务管理',
     },
   ];
 

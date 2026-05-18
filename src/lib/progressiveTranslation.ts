@@ -80,8 +80,7 @@ export class ProgressiveTranslationManager {
       this.subscribers.set(messageId, callback);
     }
 
-    // Sort queue by priority
-    this.sortQueue();
+    // 不再持久化排序：processQueue 取批前会重新排序，updatePriority 仅修改字段
   }
 
   /**
@@ -102,12 +101,12 @@ export class ProgressiveTranslationManager {
 
   /**
    * Update task priority (e.g., when message becomes visible)
+   * 仅修改优先级字段；下一次取批时会自动按新优先级排序，无需立即重排
    */
   updatePriority(messageId: string, priority: TranslationPriority): void {
     const task = this.queue.get(messageId);
     if (task && task.status === 'pending') {
       task.priority = priority;
-      this.sortQueue();
     }
   }
 
@@ -223,23 +222,6 @@ export class ProgressiveTranslationManager {
   }
 
   /**
-   * Sort the queue by priority and creation time
-   */
-  private sortQueue(): void {
-    const sortedEntries = Array.from(this.queue.entries())
-      .sort(([, a], [, b]) => {
-        // First by priority (lower number = higher priority)
-        if (a.priority !== b.priority) {
-          return a.priority - b.priority;
-        }
-        // Then by creation time (older first within same priority)
-        return a.createdAt - b.createdAt;
-      });
-
-    this.queue = new Map(sortedEntries);
-  }
-
-  /**
    * Generate cache key for content
    */
   private getCacheKey(content: string): string {
@@ -268,16 +250,40 @@ export class ProgressiveTranslationManager {
 
   /**
    * Get queue statistics
+   * 单次遍历累计各状态计数，避免 5 次 filter
    */
   getStats() {
-    const tasks = Array.from(this.queue.values());
+    let total = 0;
+    let pending = 0;
+    let processing = 0;
+    let completed = 0;
+    let errors = 0;
+
+    for (const task of this.queue.values()) {
+      total++;
+      switch (task.status) {
+        case 'pending':
+          pending++;
+          break;
+        case 'processing':
+          processing++;
+          break;
+        case 'completed':
+          completed++;
+          break;
+        case 'error':
+          errors++;
+          break;
+      }
+    }
+
     return {
-      total: tasks.length,
-      pending: tasks.filter(t => t.status === 'pending').length,
-      processing: tasks.filter(t => t.status === 'processing').length,
-      completed: tasks.filter(t => t.status === 'completed').length,
-      errors: tasks.filter(t => t.status === 'error').length,
-      cacheSize: this.cache.size
+      total,
+      pending,
+      processing,
+      completed,
+      errors,
+      cacheSize: this.cache.size,
     };
   }
 

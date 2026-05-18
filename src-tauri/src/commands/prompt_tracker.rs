@@ -596,24 +596,27 @@ pub async fn mark_prompt_completed(
         return Ok(());
     }
 
-    // Auto-commit any changes made by AI
-    // This ensures each prompt has a distinct git state
-    let commit_message =
-        build_prompt_commit_message("[Claude Code]", prompt_text.as_deref(), prompt_index);
-    match simple_git::git_commit_changes(&project_path, &commit_message) {
-        Ok(true) => {
-            log::info!("Auto-committed changes after prompt #{}", prompt_index);
-        }
-        Ok(false) => {
-            log::debug!("No changes to commit after prompt #{}", prompt_index);
-        }
-        Err(e) => {
-            log::warn!(
-                "Failed to auto-commit after prompt #{}: {}",
-                prompt_index,
-                e
-            );
-            // Continue anyway, don't fail the whole operation
+    if execution_config.disable_auto_commit_after_response {
+        log::info!(
+            "[Mark Complete] Auto-commit disabled by user setting, skipping git commit"
+        );
+    } else {
+        let commit_message =
+            build_prompt_commit_message("[Claude Code]", prompt_text.as_deref(), prompt_index);
+        match simple_git::git_commit_changes(&project_path, &commit_message) {
+            Ok(true) => {
+                log::info!("Auto-committed changes after prompt #{}", prompt_index);
+            }
+            Ok(false) => {
+                log::debug!("No changes to commit after prompt #{}", prompt_index);
+            }
+            Err(e) => {
+                log::warn!(
+                    "Failed to auto-commit after prompt #{}: {}",
+                    prompt_index,
+                    e
+                );
+            }
         }
     }
 

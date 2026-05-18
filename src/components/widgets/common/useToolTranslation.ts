@@ -21,34 +21,26 @@ import { translationMiddleware } from '@/lib/translationMiddleware';
  * - 优雅的错误处理
  */
 export const useToolTranslation = () => {
-  const [translatedContent, setTranslatedContent] = React.useState<Map<string, string>>(new Map());
+  const cacheRef = React.useRef<Map<string, string>>(new Map());
+  const [cacheVersion, setCacheVersion] = React.useState(0);
 
-  /**
-   * 翻译内容
-   * @param content 要翻译的内容
-   * @param cacheKey 缓存键（用于避免重复翻译）
-   * @returns 翻译后的内容，如果翻译失败或未启用则返回原内容
-   */
   const translateContent = React.useCallback(async (content: string, cacheKey: string) => {
-    // 检查缓存
-    if (translatedContent.has(cacheKey)) {
-      return translatedContent.get(cacheKey)!;
+    if (cacheRef.current.has(cacheKey)) {
+      return cacheRef.current.get(cacheKey)!;
     }
 
     try {
-      // 检查翻译是否启用
       const isEnabled = await translationMiddleware.isEnabled();
       if (!isEnabled) {
         return content;
       }
 
-      // 检测语言，只翻译英文内容
       const detectedLanguage = await translationMiddleware.detectLanguage(content);
       if (detectedLanguage === 'en') {
         const result = await translationMiddleware.translateClaudeResponse(content, true);
         if (result.wasTranslated) {
-          // 更新缓存
-          setTranslatedContent(prev => new Map(prev).set(cacheKey, result.translatedText));
+          cacheRef.current.set(cacheKey, result.translatedText);
+          setCacheVersion(v => v + 1);
           return result.translatedText;
         }
       }
@@ -58,18 +50,17 @@ export const useToolTranslation = () => {
       console.error('[useToolTranslation] Translation failed:', error);
       return content;
     }
-  }, [translatedContent]);
+  }, []);
 
-  /**
-   * 清空翻译缓存
-   */
   const clearCache = React.useCallback(() => {
-    setTranslatedContent(new Map());
+    cacheRef.current = new Map();
+    setCacheVersion(v => v + 1);
   }, []);
 
   return {
     translateContent,
     clearCache,
-    cacheSize: translatedContent.size,
+    cacheSize: cacheRef.current.size,
+    cacheVersion,
   };
 };

@@ -798,7 +798,8 @@
     "subagent": "子代理",
     "executionProcess": "执行过程",
     "messageCount": "{{count}} 条消息",
-    "noSubagentMessages": "暂无子代理消息"
+    "noSubagentMessages": "暂无子代理消息",
+    "executing": "子代理执行中..."
   },
   "provider": {
     "loadConfigFailed": "加载代理商配置失败",
@@ -1029,6 +1030,8 @@
     "thinkingEffortMediumDesc": "平衡速度与思考深度",
     "thinkingEffortHigh": "思考: 高",
     "thinkingEffortHighDesc": "深度思考，推荐用于复杂任务",
+    "thinkingEffortXHigh": "思考: 超高",
+    "thinkingEffortXHighDesc": "超深度思考，最适合编程和代理任务",
     "thinkingEffortMax": "思考: 最大",
     "thinkingEffortMaxDesc": "最大思考深度，适合最复杂的推理",
     "deepThinkingTokens": "Claude 将进行深度思考 (10K tokens)",

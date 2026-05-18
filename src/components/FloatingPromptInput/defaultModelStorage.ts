@@ -63,5 +63,8 @@ export function isDefaultModel(model: ModelType): boolean {
  * 验证模型类型是否有效
  */
 function isValidModelType(value: string): value is ModelType {
-  return ["sonnet", "opus", "sonnet1m", "opus1m", "custom"].includes(value);
+  if (["sonnet", "opus", "sonnet1m", "opus1m", "custom"].includes(value)) {
+    return true;
+  }
+  return value.startsWith("custom:") && value.length > "custom:".length;
 }

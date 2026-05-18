@@ -298,16 +298,17 @@ pub async fn switch_provider_config(
         return Err("settings.json格式错误".to_string());
     }
 
-    let settings_obj = settings.as_object_mut().unwrap();
+    let settings_obj = settings
+        .as_object_mut()
+        .ok_or("settings.json 格式错误")?;
     if !settings_obj.contains_key("env") {
         settings_obj.insert("env".to_string(), serde_json::json!({}));
     }
 
     let env_obj = settings_obj
         .get_mut("env")
-        .unwrap()
-        .as_object_mut()
-        .ok_or("env字段格式错误")?;
+        .and_then(|v| v.as_object_mut())
+        .ok_or("env 字段格式错误")?;
 
     // 清理之前的ANTHROPIC环境变量
     env_obj.remove("ANTHROPIC_API_KEY");
@@ -392,7 +393,9 @@ pub async fn switch_provider_config(
     // apiKeyHelper 根据用户勾选状态决定是否自动生成
     if config.enable_auto_api_key_helper.unwrap_or(false) {
         if let Some(token) = auth_token {
-            let helper_command = format!("echo '{}'", token);
+            // POSIX 单引号转义：' -> '\'' ，防止 token 中的引号破坏命令
+            let escaped = token.replace('\'', "'\\''");
+            let helper_command = format!("echo '{}'", escaped);
             settings_obj.insert(
                 "apiKeyHelper".to_string(),
                 serde_json::Value::String(helper_command),
@@ -634,4 +637,89 @@ pub async fn query_provider_usage(
         query_start_date: start_date,
         query_end_date: end_date,
     })
+}
+
+/// 从 Provider 的 /v1/models 接口拉取可用模型列表
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnthropicModelInfo {
+    /// 模型 ID（如 "claude-sonnet-4-20250514"）
+    pub id: String,
+    /// 显示名称（如果 API 返回了 display_name）
+    pub display_name: Option<String>,
+}
+
+#[command]
+pub async fn fetch_anthropic_models() -> Result<Vec<AnthropicModelInfo>, String> {
+    use reqwest::Client;
+
+    log::info!("开始拉取 Anthropic 可用模型列表");
+
+    // 从当前 provider 配置中获取 base_url 和 auth
+    let current = get_current_provider_config()
+        .map_err(|e| format!("获取当前 Provider 配置失败: {}", e))?;
+
+    let base_url = current
+        .anthropic_base_url
+        .unwrap_or_else(|| "https://api.anthropic.com".to_string());
+
+    // 优先使用 api_key，其次 auth_token
+    let auth_value = current
+        .anthropic_api_key
+        .or(current.anthropic_auth_token)
+        .ok_or_else(|| "未配置 API Key 或 Auth Token，无法拉取模型列表".to_string())?;
+
+    let normalized_base = normalize_base_url(&base_url);
+    let models_url = format!("{}/v1/models", normalized_base);
+
+    log::info!("请求模型列表: {}", models_url);
+
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
+
+    let response = client
+        .get(&models_url)
+        .header("x-api-key", &auth_value)
+        .header("anthropic-version", "2023-06-01")
+        .header("Authorization", format!("Bearer {}", auth_value))
+        .send()
+        .await
+        .map_err(|e| format!("请求模型列表失败: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("模型列表请求失败: {} - {}", status, body));
+    }
+
+    let body: Value = response
+        .json()
+        .await
+        .map_err(|e| format!("解析模型列表响应失败: {}", e))?;
+
+    // 兼容 Anthropic 官方格式 { "data": [...] } 和 OpenAI 兼容格式 { "data": [...] }
+    let models_array = body
+        .get("data")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut result: Vec<AnthropicModelInfo> = Vec::new();
+    for item in models_array {
+        if let Some(id) = item.get("id").and_then(|v| v.as_str()) {
+            let display_name = item
+                .get("display_name")
+                .or_else(|| item.get("name"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            result.push(AnthropicModelInfo {
+                id: id.to_string(),
+                display_name,
+            });
+        }
+    }
+
+    log::info!("成功获取 {} 个模型", result.len());
+    Ok(result)
 }
