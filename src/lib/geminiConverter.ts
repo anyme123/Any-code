@@ -79,6 +79,70 @@ export function extractGeminiUsage(tokens: unknown): GeminiUsage | null {
 }
 
 /**
+ * Gemini grounding 来源条目（统一前端结构）
+ */
+export interface GeminiGroundingSource {
+  title: string;
+  uri: string;
+  snippet?: string;
+}
+
+/**
+ * 从 Gemini candidates[].groundingMetadata 中提取标准化来源数组
+ *
+ * 支持的 shape：
+ * - groundingChunks: [{ web: { uri, title } }, ...]
+ * - groundingSupports: [{ segment: { text }, groundingChunkIndices: [...] }, ...]
+ *
+ * 同时兼容 camelCase / snake_case 字段命名差异。
+ */
+export function extractGeminiGroundingSources(candidate: unknown): GeminiGroundingSource[] {
+  if (!candidate || typeof candidate !== 'object') return [];
+  const c = candidate as any;
+  const meta = c.groundingMetadata || c.grounding_metadata;
+  if (!meta || typeof meta !== 'object') return [];
+
+  const chunks: any[] = Array.isArray(meta.groundingChunks)
+    ? meta.groundingChunks
+    : Array.isArray(meta.grounding_chunks)
+      ? meta.grounding_chunks
+      : [];
+  if (chunks.length === 0) return [];
+
+  // 反向索引：chunkIndex -> 关联文本片段，用作 snippet
+  const supports: any[] = Array.isArray(meta.groundingSupports)
+    ? meta.groundingSupports
+    : Array.isArray(meta.grounding_supports)
+      ? meta.grounding_supports
+      : [];
+  const snippetByIndex = new Map<number, string>();
+  for (const s of supports) {
+    const text = s?.segment?.text;
+    const indices: number[] = s?.groundingChunkIndices || s?.grounding_chunk_indices || [];
+    if (typeof text === 'string' && Array.isArray(indices)) {
+      for (const idx of indices) {
+        // 同一 chunk 多次命中时，取首段即可，避免拼接过长
+        if (!snippetByIndex.has(idx)) snippetByIndex.set(idx, text);
+      }
+    }
+  }
+
+  const sources: GeminiGroundingSource[] = [];
+  chunks.forEach((chunk, idx) => {
+    const web = chunk?.web || chunk?.retrievedContext || chunk?.retrieved_context;
+    const uri: string | undefined = web?.uri || web?.url;
+    const title: string | undefined = web?.title || web?.name;
+    if (!uri) return;
+    sources.push({
+      title: title || uri,
+      uri,
+      snippet: snippetByIndex.get(idx),
+    });
+  });
+  return sources;
+}
+
+/**
  * Convert Gemini CLI `get_gemini_session_detail` payload into unified ClaudeStreamMessage array.
  *
  * Goal: keep history-loaded messages consistent with stream-json output:
@@ -156,7 +220,20 @@ export function convertGeminiSessionDetailToClaudeMessages(
       assistantContent.push({ type: 'text', text: msg.content });
     }
 
-    converted.push({
+    // 兼容性提取 groundingMetadata：CLI 历史目前不带 candidates，
+    // 但若后端在 message 上挂了 candidates / groundingMetadata 字段则照样能识别
+    const rawMsg = msg as any;
+    const groundingSources = (() => {
+      if (Array.isArray(rawMsg.candidates) && rawMsg.candidates.length > 0) {
+        return extractGeminiGroundingSources(rawMsg.candidates[0]);
+      }
+      if (rawMsg.groundingMetadata || rawMsg.grounding_metadata) {
+        return extractGeminiGroundingSources({ groundingMetadata: rawMsg.groundingMetadata || rawMsg.grounding_metadata });
+      }
+      return [];
+    })();
+
+    const assistantMessage: ClaudeStreamMessage = {
       type: 'assistant',
       message: {
         content: assistantContent.length > 0 ? assistantContent : [{ type: 'text', text: '' }],
@@ -165,7 +242,12 @@ export function convertGeminiSessionDetailToClaudeMessages(
       timestamp: msg.timestamp,
       engine: 'gemini',
       model: msg.model,
-    });
+    };
+    if (groundingSources.length > 0) {
+      // 解耦方案：直接挂 metadata，由前端 StreamMessageV2 检测后渲染
+      (assistantMessage as any).groundingSources = groundingSources;
+    }
+    converted.push(assistantMessage);
 
     const usage = extractGeminiUsage(msg.tokens);
     if (usage) {

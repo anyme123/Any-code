@@ -112,6 +112,15 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Note: Codex 使用 ChatGPT 订阅时按会话限制计费，API Key 用户按 token 计费
   // ============================================================================
 
+  // GPT-5.5 - 2026-04 旗舰前沿推理模型
+  // 105k context, OpenRouter 报价
+  'gpt-5.5': {
+    input: 5.0,
+    output: 30.0,
+    cacheWrite: 0,
+    cacheRead: 0.5
+  },
+
   // GPT-5.4 - 最强旗舰模型（2026年3月5日发布）
   // Context: 1.05M tokens, Max Output: 128K tokens, 原生计算机使用
   'gpt-5.4': {
@@ -199,6 +208,37 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheRead: 0.125
   },
 
+  // ========== 2026-05 新增：GPT-5 通用旗舰系列 ==========
+  // gpt-5 - 通用推理旗舰
+  'gpt-5': {
+    input: 1.25,
+    output: 10.00,
+    cacheWrite: 0,
+    cacheRead: 0.125
+  },
+  // gpt-5-mini - 低延迟低成本
+  'gpt-5-mini': {
+    input: 0.25,
+    output: 2.00,
+    cacheWrite: 0,
+    cacheRead: 0.025
+  },
+  // gpt-5-nano - 超低成本
+  'gpt-5-nano': {
+    input: 0.05,
+    output: 0.40,
+    cacheWrite: 0,
+    cacheRead: 0.005
+  },
+
+  // o3 - OpenAI o3 推理模型
+  'o3': {
+    input: 2.00,
+    output: 8.00,
+    cacheWrite: 0,
+    cacheRead: 0.50
+  },
+
   // o4-mini (Codex 底层模型之一)
   // Source: https://platform.openai.com/docs/pricing
   'o4-mini': {
@@ -221,12 +261,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheRead: 0.25
   },
 
+  // Gemini 3.1 Flash-Lite (Preview, 2026-Q2) - 超低延迟低成本
+  'gemini-3.1-flash-lite': {
+    input: 0.25,
+    output: 1.50,
+    cacheWrite: 0,
+    cacheRead: 0.025
+  },
+
   // Gemini 3 Pro Preview
   'gemini-3-pro-preview': {
     input: 2.00,
     output: 12.00,
     cacheWrite: 0.0,
     cacheRead: 0.20
+  },
+
+  // Gemini 3 Flash (Preview) - Gemini 3 Flash 预览版
+  'gemini-3-flash-preview': {
+    input: 0.50,
+    output: 3.00,
+    cacheWrite: 0,
+    cacheRead: 0.05
   },
 
   // Gemini 3 Flash
@@ -317,11 +373,17 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // ============================================================================
 
   if (normalized.includes('gemini')) {
+    if (normalized.includes('gemini-3.1-flash-lite') || normalized.includes('gemini_3_1_flash_lite') || normalized.includes('3.1-flash-lite')) {
+      return MODEL_PRICING['gemini-3.1-flash-lite'];
+    }
     if (normalized.includes('gemini-3.1-pro') || normalized.includes('gemini_3_1_pro') || normalized.includes('3.1-pro')) {
       return MODEL_PRICING['gemini-3.1-pro-preview'];
     }
     if (normalized.includes('gemini-3-pro') || normalized.includes('gemini_3_pro')) {
       return MODEL_PRICING['gemini-3-pro-preview'];
+    }
+    if (normalized.includes('gemini-3-flash-preview') || normalized.includes('gemini_3_flash_preview')) {
+      return MODEL_PRICING['gemini-3-flash-preview'];
     }
     if (normalized.includes('gemini-3-flash') || normalized.includes('gemini_3_flash')) {
       return MODEL_PRICING['gemini-3-flash'];
@@ -346,6 +408,11 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
   // ============================================================================
   // Codex Models (OpenAI)
   // ============================================================================
+
+  // GPT-5.5 系列（2026-04 旗舰前沿推理）
+  if (normalized.includes('gpt-5.5') || normalized.includes('gpt5.5') || normalized.includes('gpt_5_5') || normalized.includes('5.5')) {
+    return MODEL_PRICING['gpt-5.5'];
+  }
 
   // GPT-5.4 系列（最新旗舰）
   if (normalized.includes('5.4-pro') || normalized.includes('5_4_pro')) {
@@ -388,9 +455,12 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['gpt-5.1-codex'];
   }
 
-  // o4-mini (Codex 底层模型)
+  // o3 / o4-mini (Codex 底层模型)
   if (normalized.includes('o4-mini') || normalized.includes('o4_mini')) {
     return MODEL_PRICING['o4-mini'];
+  }
+  if (normalized === 'o3' || normalized.startsWith('o3-') || normalized.startsWith('o3_') || normalized.includes('-o3') || normalized.includes(' o3')) {
+    return MODEL_PRICING['o3'];
   }
 
   // codex-mini-latest - 默认 CLI 模型
@@ -398,9 +468,20 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['codex-mini-latest'];
   }
 
-  // gpt-5-codex (别名)
+  // GPT-5 通用旗舰系列（gpt-5-mini / gpt-5-nano / gpt-5-codex / gpt-5）
+  // 长前缀优先：mini / nano / codex 必须先于通用 gpt-5 匹配
+  if (normalized.includes('gpt-5-nano') || normalized.includes('gpt_5_nano')) {
+    return MODEL_PRICING['gpt-5-nano'];
+  }
+  if (normalized.includes('gpt-5-mini') || normalized.includes('gpt_5_mini')) {
+    return MODEL_PRICING['gpt-5-mini'];
+  }
   if (normalized.includes('gpt-5-codex') || normalized.includes('gpt_5_codex')) {
     return MODEL_PRICING['gpt-5-codex'];
+  }
+  // 通用 gpt-5 旗舰（必须排在 5.1/5.2/5.3/5.4/5.5 等子型号之后）
+  if (normalized === 'gpt-5' || normalized.startsWith('gpt-5-') || normalized.startsWith('gpt-5@') || normalized === 'gpt5' || normalized.startsWith('gpt_5')) {
+    return MODEL_PRICING['gpt-5'];
   }
 
   // 通用 Codex 匹配 - 默认使用 gpt-5.4
@@ -477,6 +558,16 @@ function getGeminiTieredPricing(model: string, promptTokens: number): ModelPrici
   const lower = model.toLowerCase();
   const isOver200k = promptTokens > 200_000;
 
+  // Gemini 3.1 Flash-Lite (Preview) - 不分级，始终单档
+  if (lower.includes('gemini-3.1-flash-lite') || lower.includes('gemini_3_1_flash_lite') || lower.includes('3.1-flash-lite')) {
+    return {
+      input: 0.25,
+      output: 1.50,
+      cacheWrite: 0.0,
+      cacheRead: 0.025,
+    };
+  }
+
   // Gemini 3.1 Pro Preview (Latest)
   if (lower.includes('gemini-3.1-pro') || lower.includes('gemini_3_1_pro') || lower.includes('3.1-pro')) {
     return {
@@ -494,6 +585,16 @@ function getGeminiTieredPricing(model: string, promptTokens: number): ModelPrici
       output: isOver200k ? 18.00 : 12.00,
       cacheWrite: 0.0,
       cacheRead: isOver200k ? 0.40 : 0.20,
+    };
+  }
+
+  // Gemini 3 Flash (Preview) - 不分级，始终单档
+  if (lower.includes('gemini-3-flash-preview') || lower.includes('gemini_3_flash_preview')) {
+    return {
+      input: 0.50,
+      output: 3.00,
+      cacheWrite: 0.0,
+      cacheRead: 0.05,
     };
   }
 

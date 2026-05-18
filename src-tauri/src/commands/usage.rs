@@ -91,6 +91,15 @@ enum ModelFamily {
     Opus41,   // Claude 4.1 Opus
     Sonnet45, // Claude 4.5 Sonnet
     Haiku45,  // Claude 4.5 Haiku
+    // ========== 2026-05 新增：Codex / Gemini 模型 ==========
+    // ⚠️ MUST MATCH src/lib/pricing.ts
+    Gpt55,                // GPT-5.5 (2026-04 旗舰)
+    Gpt5,                 // gpt-5 通用旗舰
+    Gpt5Mini,             // gpt-5-mini
+    Gpt5Nano,             // gpt-5-nano
+    O3,                   // OpenAI o3
+    Gemini31FlashLite,    // gemini-3.1-flash-lite (Preview)
+    Gemini3FlashPreview,  // gemini-3-flash-preview
     Unknown,  // Unknown model
 }
 
@@ -143,6 +152,57 @@ impl ModelPricing {
                 output: 75.0,
                 cache_write: 18.75,
                 cache_read: 1.50,
+            },
+            // ========== 2026-05 新增：Codex / Gemini 模型 ==========
+            // ⚠️ MUST MATCH src/lib/pricing.ts
+            // GPT-5.5 - 2026-04 旗舰前沿推理
+            ModelFamily::Gpt55 => ModelPricing {
+                input: 5.0,
+                output: 30.0,
+                cache_write: 0.0,
+                cache_read: 0.5,
+            },
+            // gpt-5 - 通用推理旗舰
+            ModelFamily::Gpt5 => ModelPricing {
+                input: 1.25,
+                output: 10.0,
+                cache_write: 0.0,
+                cache_read: 0.125,
+            },
+            // gpt-5-mini - 低延迟低成本
+            ModelFamily::Gpt5Mini => ModelPricing {
+                input: 0.25,
+                output: 2.0,
+                cache_write: 0.0,
+                cache_read: 0.025,
+            },
+            // gpt-5-nano - 超低成本
+            ModelFamily::Gpt5Nano => ModelPricing {
+                input: 0.05,
+                output: 0.40,
+                cache_write: 0.0,
+                cache_read: 0.005,
+            },
+            // o3 - OpenAI o3 推理模型
+            ModelFamily::O3 => ModelPricing {
+                input: 2.0,
+                output: 8.0,
+                cache_write: 0.0,
+                cache_read: 0.50,
+            },
+            // gemini-3.1-flash-lite (Preview)
+            ModelFamily::Gemini31FlashLite => ModelPricing {
+                input: 0.25,
+                output: 1.50,
+                cache_write: 0.0,
+                cache_read: 0.025,
+            },
+            // gemini-3-flash-preview
+            ModelFamily::Gemini3FlashPreview => ModelPricing {
+                input: 0.50,
+                output: 3.0,
+                cache_write: 0.0,
+                cache_read: 0.05,
             },
             ModelFamily::Unknown => ModelPricing {
                 input: 0.0,
@@ -214,6 +274,64 @@ fn parse_model_family(model: &str) -> ModelFamily {
     }
     if normalized.contains("sonnet") {
         return ModelFamily::Sonnet46; // Default to latest Sonnet
+    }
+
+    // ========== 2026-05 新增：Codex / Gemini 模型识别 ==========
+    // ⚠️ MUST MATCH src/lib/pricing.ts::getPricingForModel
+    // 长前缀优先：lite → pro → flash-preview → flash → ...
+
+    // Gemini 3.1 Flash-Lite (Preview)
+    if normalized.contains("gemini-3.1-flash-lite")
+        || normalized.contains("gemini_3_1_flash_lite")
+        || normalized.contains("3.1-flash-lite")
+    {
+        return ModelFamily::Gemini31FlashLite;
+    }
+    // Gemini 3 Flash (Preview)
+    if normalized.contains("gemini-3-flash-preview")
+        || normalized.contains("gemini_3_flash_preview")
+    {
+        return ModelFamily::Gemini3FlashPreview;
+    }
+
+    // GPT-5.5 旗舰（必须先于 5.4 / 5.3 / 5.2 / 5.1 通用 5 匹配）
+    if normalized.contains("gpt-5.5")
+        || normalized.contains("gpt5.5")
+        || normalized.contains("gpt_5_5")
+    {
+        return ModelFamily::Gpt55;
+    }
+
+    // o3 / o4-mini 推理模型
+    if normalized == "o3"
+        || normalized.starts_with("o3-")
+        || normalized.starts_with("o3_")
+    {
+        return ModelFamily::O3;
+    }
+
+    // GPT-5 通用旗舰子型号（mini / nano 必须先于通用 gpt-5 匹配）
+    if normalized.contains("gpt-5-nano") || normalized.contains("gpt_5_nano") {
+        return ModelFamily::Gpt5Nano;
+    }
+    if normalized.contains("gpt-5-mini") || normalized.contains("gpt_5_mini") {
+        return ModelFamily::Gpt5Mini;
+    }
+    // 通用 gpt-5（排除已识别的 5.1/5.2/5.3/5.4/5.5 子型号）
+    if normalized == "gpt-5"
+        || normalized.starts_with("gpt-5-")
+        || normalized.starts_with("gpt-5@")
+        || normalized == "gpt5"
+        || normalized.starts_with("gpt_5")
+    {
+        // 仅当不包含已知子版本号时才回落到 gpt-5
+        let already_versioned = normalized.contains("5.1")
+            || normalized.contains("5.2")
+            || normalized.contains("5.3")
+            || normalized.contains("5.4");
+        if !already_versioned {
+            return ModelFamily::Gpt5;
+        }
     }
 
     ModelFamily::Unknown

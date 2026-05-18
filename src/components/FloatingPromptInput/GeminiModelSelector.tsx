@@ -61,6 +61,21 @@ const DEFAULT_GEMINI_MODELS: GeminiModelConfig[] = [
     icon: <Brain className="h-4 w-4 text-green-500" />,
     isDefault: false,
   },
+  // ========== 2026-05 新增模型 ==========
+  {
+    id: 'gemini-3.1-flash-lite',
+    name: 'Gemini 3.1 Flash-Lite (Preview)',
+    description: '超低延迟低成本（2026-Q2）',
+    icon: <Gauge className="h-4 w-4 text-yellow-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gemini-3-flash-preview',
+    name: 'Gemini 3 Flash (Preview)',
+    description: 'Gemini 3 Flash 预览版',
+    icon: <Gauge className="h-4 w-4 text-yellow-500" />,
+    isDefault: false,
+  },
 ];
 
 /**

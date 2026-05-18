@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronUp, Check, Star, Brain, Cpu, Rocket, Zap } from "lucide-react";
+import { ChevronUp, Check, Star, Brain, Cpu, Rocket, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,56 @@ const DEFAULT_CODEX_MODELS: CodexModelConfig[] = [
     icon: <Brain className="h-4 w-4 text-orange-500" />,
     isDefault: false,
   },
+  // ========== 2026-05 新增模型 ==========
+  {
+    id: 'gpt-5.5',
+    name: 'GPT-5.5',
+    description: 'Frontier reasoning，2026 年 4 月旗舰',
+    icon: <Sparkles className="h-4 w-4 text-red-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gpt-5',
+    name: 'GPT-5',
+    description: '通用推理旗舰',
+    icon: <Brain className="h-4 w-4 text-blue-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gpt-5-codex',
+    name: 'GPT-5 Codex',
+    description: '代码专用，2025-09 发布',
+    icon: <Rocket className="h-4 w-4 text-emerald-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gpt-5-mini',
+    name: 'GPT-5 Mini',
+    description: '低延迟低成本',
+    icon: <Zap className="h-4 w-4 text-amber-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'gpt-5-nano',
+    name: 'GPT-5 Nano',
+    description: '超低成本',
+    icon: <Cpu className="h-4 w-4 text-cyan-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'o3',
+    name: 'o3',
+    description: 'OpenAI o3 推理模型',
+    icon: <Brain className="h-4 w-4 text-purple-500" />,
+    isDefault: false,
+  },
+  {
+    id: 'o4-mini',
+    name: 'o4-mini',
+    description: 'o4-mini 低成本推理',
+    icon: <Brain className="h-4 w-4 text-purple-500" />,
+    isDefault: false,
+  },
 ];
 
 /**
@@ -90,6 +140,10 @@ const DEFAULT_CODEX_MODELS: CodexModelConfig[] = [
  */
 function getCodexModelIcon(modelId: string): React.ReactNode {
   const lower = modelId.toLowerCase();
+  // GPT-5.5 旗舰
+  if (lower.includes('5.5')) {
+    return <Sparkles className="h-4 w-4 text-red-500" />;
+  }
   if (lower.includes('5.4-pro')) {
     return <Star className="h-4 w-4 text-red-500" />;
   }
@@ -99,11 +153,22 @@ function getCodexModelIcon(modelId: string): React.ReactNode {
   if (lower.includes('codex') && lower.includes('max')) {
     return <Rocket className="h-4 w-4 text-green-500" />;
   }
+  // GPT-5 系列轻量子型号（必须在 codex / gpt-5 通用匹配之前）
+  if (lower.includes('nano')) {
+    return <Cpu className="h-4 w-4 text-cyan-500" />;
+  }
+  if (lower.includes('mini') && lower.includes('5')) {
+    return <Zap className="h-4 w-4 text-amber-500" />;
+  }
   if (lower.includes('codex')) {
     return <Rocket className="h-4 w-4 text-emerald-500" />;
   }
   if (lower.includes('o3') || lower.includes('o4')) {
     return <Brain className="h-4 w-4 text-purple-500" />;
+  }
+  // 通用 GPT-5 (gpt-5 旗舰)
+  if (lower.includes('gpt-5')) {
+    return <Brain className="h-4 w-4 text-blue-500" />;
   }
   return <Cpu className="h-4 w-4 text-blue-500" />;
 }

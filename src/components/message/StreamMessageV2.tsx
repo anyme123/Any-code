@@ -5,6 +5,7 @@ import { SystemMessage } from "./SystemMessage";
 import { ResultMessage } from "./ResultMessage";
 import { SummaryMessage } from "./SummaryMessage";
 import { SubagentMessageGroup } from "./SubagentMessageGroup";
+import { GroundingSourcesCard, type GroundingSource } from "@/components/widgets/grounding/GroundingSourcesCard";
 import type { ClaudeStreamMessage } from '@/types/claude';
 import type { RewindMode } from '@/lib/api';
 import type { MessageGroup } from '@/lib/subagentGrouping';
@@ -241,6 +242,23 @@ const StreamMessageV2Component: React.FC<StreamMessageV2Props> = ({
   } : messageType === 'system' ? {
     claudeSettings
   } : {};
+
+  // Gemini grounding 来源：由 geminiConverter 写入 message.groundingSources
+  // 仅对 assistant 消息追加渲染，避免和 user/result 消息混淆
+  const groundingSources: GroundingSource[] | undefined = (message as any).groundingSources;
+  const shouldRenderGrounding =
+    messageType === 'assistant' &&
+    Array.isArray(groundingSources) &&
+    groundingSources.length > 0;
+
+  if (shouldRenderGrounding) {
+    return (
+      <>
+        <Renderer {...commonProps} {...specificProps} />
+        <GroundingSourcesCard sources={groundingSources!} />
+      </>
+    );
+  }
 
   return <Renderer {...commonProps} {...specificProps} />;
 };

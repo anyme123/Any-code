@@ -134,7 +134,7 @@ export const CustomModelManagerDialog: React.FC<CustomModelManagerDialogProps> =
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {/* 已添加列表 */}
           <section className="space-y-2">
             <div className="flex items-center justify-between">
@@ -142,7 +142,7 @@ export const CustomModelManagerDialog: React.FC<CustomModelManagerDialogProps> =
               <span className="text-xs text-muted-foreground">{list.length} 个</span>
             </div>
             {list.length === 0 ? (
-              <div className="text-xs text-muted-foreground border border-dashed border-border/50 rounded-md p-4 text-center">
+              <div className="text-xs text-muted-foreground border border-dashed border-border/40 rounded-md py-2.5 px-3 text-center bg-muted/20">
                 暂未添加自定义模型
               </div>
             ) : (
@@ -181,15 +181,16 @@ export const CustomModelManagerDialog: React.FC<CustomModelManagerDialogProps> =
             )}
           </section>
 
-          {/* 手动添加 */}
+          {/* 手动添加 — 紧凑行内布局，按钮内嵌 */}
           <section className="space-y-2">
             <h3 className="text-sm font-medium">手动添加</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 placeholder="Model ID (如 claude-3-5-sonnet-20241022)"
                 value={manualModelId}
                 onChange={(e) => setManualModelId(e.target.value)}
                 inputSize="sm"
+                className="flex-[2] min-w-0 font-mono text-xs"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddManual();
                 }}
@@ -199,10 +200,20 @@ export const CustomModelManagerDialog: React.FC<CustomModelManagerDialogProps> =
                 value={manualName}
                 onChange={(e) => setManualName(e.target.value)}
                 inputSize="sm"
+                className="flex-1 min-w-0"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddManual();
                 }}
               />
+              <Button
+                size="sm"
+                onClick={handleAddManual}
+                disabled={!manualModelId.trim()}
+                className="gap-1.5 shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                添加
+              </Button>
             </div>
             {manualError && (
               <div className="flex items-center gap-1.5 text-xs text-destructive">
@@ -210,15 +221,6 @@ export const CustomModelManagerDialog: React.FC<CustomModelManagerDialogProps> =
                 {manualError}
               </div>
             )}
-            <Button
-              size="sm"
-              onClick={handleAddManual}
-              disabled={!manualModelId.trim()}
-              className="gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              添加
-            </Button>
           </section>
 
           {/* 接口拉取 */}

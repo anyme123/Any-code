@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useRef, useCallback } from "react";
+import React, { memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { BrainCircuit, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTypewriter } from "@/hooks/useTypewriter";
@@ -73,6 +73,13 @@ const ThinkingBlockComponent: React.FC<ThinkingBlockProps> = ({
 
   // 显示的文本内容
   const textToDisplay = isStreaming ? displayedText : content;
+
+  // 折叠状态下的首行预览（最多 80 字符）
+  const collapsedPreview = useMemo(() => {
+    if (!content) return '';
+    const firstLine = content.split('\n').find(l => l.trim()) || '';
+    return firstLine.length > 80 ? firstLine.slice(0, 80) + '……' : firstLine;
+  }, [content]);
   
   // 处理分割符：将 ---divider--- 替换为可视化的分割线组件
   // 如果内容中包含分割符，说明是聚合后的多段思考
@@ -143,7 +150,13 @@ const ThinkingBlockComponent: React.FC<ThinkingBlockProps> = ({
         className="w-full cursor-pointer px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300 font-medium hover:bg-amber-500/10 transition-colors select-none flex items-center gap-2 outline-none text-left"
       >
         <BrainCircuit className="w-3.5 h-3.5 opacity-70" />
-        <span>Thinking Process</span>
+        <span>💭 推理过程</span>
+
+        {/* 折叠时显示字数统计 */}
+        <span className="text-[10px] opacity-60">
+          · 约 {content.length} 字
+          {content.length > 100 && ` (~${Math.round(content.length / 4)} tokens)`}
+        </span>
 
         {/* 打字中指示器 */}
         {isTyping && (
@@ -151,9 +164,6 @@ const ThinkingBlockComponent: React.FC<ThinkingBlockProps> = ({
         )}
 
         <span className="ml-auto flex items-center gap-2">
-          <span className="text-[10px] opacity-60">
-            {content.length} chars
-          </span>
           <ChevronDown
             className={cn(
               "w-3.5 h-3.5 opacity-60 transition-transform duration-200",
@@ -162,6 +172,15 @@ const ThinkingBlockComponent: React.FC<ThinkingBlockProps> = ({
           />
         </span>
       </button>
+
+      {/* 折叠状态下的首行预览 */}
+      {!isOpen && collapsedPreview && (
+        <div className="px-3 pb-1.5 pt-0">
+          <p className="text-[11px] text-muted-foreground/60 truncate font-mono italic">
+            {collapsedPreview}
+          </p>
+        </div>
+      )}
 
       {/* Content - 可展开/收起
           ⚡ 性能优化：移除 max-height transition，避免动画 300ms 期间
