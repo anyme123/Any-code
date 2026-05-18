@@ -40,6 +40,10 @@ AGENTS.md
 # Claude project-specific files
 .claude/
 
+# Superpowers-ZH (本地 skills 框架，由 npx superpowers-zh 生成)
+.codex/
+CLAUDE.md
+
 # Provider configurations (contains sensitive API keys)
 providers.json
 hidden_projects.json
