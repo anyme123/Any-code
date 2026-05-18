@@ -41,6 +41,7 @@ impl Drop for ClaudeProcessState {
         if let Ok(handle) = tokio::runtime::Handle::try_current() {
             // We're in a tokio runtime context
             handle.block_on(async move {
+                // FIXME(perf): 持锁跨 await 易死锁，建议先 drop guard 再 await
                 let mut current_process = process.lock().await;
                 if let Some(mut child) = current_process.take() {
                     log::info!("Cleanup on drop: Killing Claude process");
@@ -58,6 +59,7 @@ impl Drop for ClaudeProcessState {
             // Create a temporary runtime for cleanup
             if let Ok(rt) = tokio::runtime::Runtime::new() {
                 rt.block_on(async move {
+                    // FIXME(perf): 持锁跨 await 易死锁，建议先 drop guard 再 await
                     let mut current_process = process.lock().await;
                     if let Some(mut child) = current_process.take() {
                         log::info!("Cleanup on drop: Killing Claude process");
@@ -567,6 +569,7 @@ pub async fn cancel_claude_execution(
     // Method 2: Try the legacy approach via ClaudeProcessState
     if !killed {
         let claude_state = app.state::<ClaudeProcessState>();
+        // FIXME(perf): 持锁跨 await 易死锁，建议先 drop guard 再 await
         let mut current_process = claude_state.current_process.lock().await;
 
         if let Some(mut child) = current_process.take() {
@@ -727,9 +730,17 @@ async fn spawn_claude_process(
 
             // 使用 spawn 异步写入 stdin，避免阻塞主流程
             tokio::spawn(async move {
-                if let Err(e) = stdin.write_all(prompt_for_stdin.as_bytes()).await {
-                    log::error!("Failed to write prompt to stdin: {}", e);
-                    return;
+                match stdin.write_all(prompt_for_stdin.as_bytes()).await {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
+                        log::warn!("stdin BrokenPipe: child process exited before prompt was fully written");
+                        // 进程已退出，不再传播错误，让 wait() 的退出码决定
+                        return;
+                    }
+                    Err(e) => {
+                        log::error!("Failed to write prompt to stdin: {}", e);
+                        return;
+                    }
                 }
                 // 关闭 stdin 表示输入完成
                 if let Err(e) = stdin.shutdown().await {

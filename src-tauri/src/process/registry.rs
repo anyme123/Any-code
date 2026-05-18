@@ -5,6 +5,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::process::Child;
 
+// 子进程实时输出缓冲上限，超出后丢弃最旧 50% 防止 OOM
+const MAX_LIVE_OUTPUT_BYTES: usize = 4 * 1024 * 1024; // 4MB
+
 /// Type of process being tracked
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProcessType {
@@ -393,7 +396,7 @@ impl ProcessRegistry {
                 "Attempting fallback kill for process {} (PID: {})",
                 run_id, pid
             );
-            match self.kill_process_by_pid(run_id, pid) {
+            match self.kill_process_by_pid(run_id, pid).await {
                 Ok(true) => return Ok(true),
                 Ok(false) => warn!(
                     "Fallback kill also failed for process {} (PID: {})",
@@ -457,7 +460,7 @@ impl ProcessRegistry {
                     *child_guard = None;
                 }
                 // One more attempt with system kill
-                let _ = self.kill_process_by_pid(run_id, pid);
+                let _ = self.kill_process_by_pid(run_id, pid).await;
             }
         }
 
@@ -541,7 +544,7 @@ impl ProcessRegistry {
     }
 
     /// Kill a process by PID using system commands (fallback method)
-    pub fn kill_process_by_pid(&self, run_id: i64, pid: u32) -> Result<bool, String> {
+    pub async fn kill_process_by_pid(&self, run_id: i64, pid: u32) -> Result<bool, String> {
         use log::{error, info, warn};
 
         info!("Attempting to kill process {} by PID {}", run_id, pid);
@@ -578,7 +581,7 @@ impl ProcessRegistry {
                 Ok(output) if output.status.success() => {
                     info!("Sent SIGTERM to process group {}", pid);
                     // Give it 2 seconds to exit gracefully
-                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
                     // Check if still running
                     let check_result = std::process::Command::new("kill")
@@ -676,6 +679,11 @@ impl ProcessRegistry {
         let processes = self.processes.lock().map_err(|e| e.to_string())?;
         if let Some(handle) = processes.get(&run_id) {
             let mut live_output = handle.live_output.lock().map_err(|e| e.to_string())?;
+            // 超出上限时保留最新一半，丢弃最旧的，防止长会话 OOM
+            if live_output.len() > MAX_LIVE_OUTPUT_BYTES {
+                let drain_to = live_output.len() / 2;
+                live_output.drain(..drain_to);
+            }
             live_output.push_str(output);
             live_output.push('\n');
         }
