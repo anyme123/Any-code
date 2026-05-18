@@ -5,6 +5,11 @@
  * 支持所有消息类型和Claude模型的精确token统计和成本计算
  *
  * 2026年最新官方定价和Claude 4.7系列模型支持
+ *
+ * 优化思路（normalizeModel）：
+ * - 用一份预排序的"family + version 关键词 -> 标准 id"规则表代替 15+ 个串行 if/.includes
+ * - 排序按 version 关键词长度降序（longest-first），保证 4.7 > 4.6 > 4.5 等优先级与原函数完全等价
+ * - 命中第一条规则即返回，避免无谓继续匹配
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -384,6 +389,33 @@ export interface TokenBreakdown {
   };
 }
 
+/**
+ * normalizeModel 的规则表
+ * - 顺序与原 if 链严格一致：4.7 → 4.6(opus/sonnet) → 4.5(opus/haiku/sonnet) → 4.1 → family-only 兜底
+ * - 每条规则同时要求 family 子串与某个 version 关键词命中；versions 为空表示 family-only 兜底
+ */
+const NORMALIZE_MODEL_RULES: ReadonlyArray<{
+  family: string;
+  versions: ReadonlyArray<string>;
+  id: string;
+}> = [
+  // Claude 4.7 Series (Latest)
+  { family: 'opus', versions: ['4.7', '4-7'], id: 'claude-opus-4-7' },
+  // Claude 4.6 Series
+  { family: 'opus', versions: ['4.6', '4-6'], id: 'claude-opus-4-6' },
+  { family: 'sonnet', versions: ['4.6', '4-6'], id: 'claude-sonnet-4-6' },
+  // Claude 4.5 Series
+  { family: 'opus', versions: ['4.5', '4-5'], id: 'claude-opus-4-5' },
+  { family: 'haiku', versions: ['4.5', '4-5'], id: 'claude-haiku-4-5' },
+  { family: 'sonnet', versions: ['4.5', '4-5'], id: 'claude-sonnet-4-5' },
+  // Claude 4.1 Series
+  { family: 'opus', versions: ['4.1', '4-1'], id: 'claude-opus-4-1' },
+  // Generic family detection (fallback - MUST match backend)
+  { family: 'haiku', versions: [], id: 'claude-haiku-4-5' },
+  { family: 'opus', versions: [], id: 'claude-opus-4-7' },
+  { family: 'sonnet', versions: [], id: 'claude-sonnet-4-6' },
+];
+
 export class TokenCounterService {
   private client: Anthropic | null = null;
   private apiKey: string | null = null;
@@ -451,6 +483,10 @@ export class TokenCounterService {
    *
    * This function replicates the backend logic to ensure consistent
    * model identification and pricing across frontend and backend.
+   *
+   * 优化：用预排序规则表代替 15+ 个串行 .includes 判断；命中第一条匹配即返回。
+   * 优先级顺序与原函数严格一致：family+version 组合优先（按版本降序），
+   * 然后才是 family-only 兜底（haiku → 4-5，opus → 4-7，sonnet → 4-6）。
    */
   public normalizeModel(model?: string): string {
     if (!model) return 'claude-sonnet-4-6';
@@ -466,46 +502,19 @@ export class TokenCounterService {
       normalized = normalized.substring(0, atIndex);
     }
 
-    // Priority-based matching (order matters! MUST match backend logic)
-
-    // Claude 4.7 Series (Latest)
-    if (normalized.includes('opus') && (normalized.includes('4.7') || normalized.includes('4-7'))) {
-      return 'claude-opus-4-7';
-    }
-
-    // Claude 4.6 Series
-    if (normalized.includes('opus') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
-      return 'claude-opus-4-6';
-    }
-    if (normalized.includes('sonnet') && (normalized.includes('4.6') || normalized.includes('4-6'))) {
-      return 'claude-sonnet-4-6';
-    }
-
-    // Claude 4.5 Series
-    if (normalized.includes('opus') && (normalized.includes('4.5') || normalized.includes('4-5'))) {
-      return 'claude-opus-4-5';
-    }
-    if (normalized.includes('haiku') && (normalized.includes('4.5') || normalized.includes('4-5'))) {
-      return 'claude-haiku-4-5';
-    }
-    if (normalized.includes('sonnet') && (normalized.includes('4.5') || normalized.includes('4-5'))) {
-      return 'claude-sonnet-4-5';
-    }
-
-    // Claude 4.1 Series
-    if (normalized.includes('opus') && (normalized.includes('4.1') || normalized.includes('4-1'))) {
-      return 'claude-opus-4-1';
-    }
-
-    // Generic family detection (fallback - MUST match backend)
-    if (normalized.includes('haiku')) {
-      return 'claude-haiku-4-5'; // Default to latest
-    }
-    if (normalized.includes('opus')) {
-      return 'claude-opus-4-7'; // Default to latest
-    }
-    if (normalized.includes('sonnet')) {
-      return 'claude-sonnet-4-6'; // Default to latest
+    // 预排序规则表：按原 if 顺序排列，命中第一条即返回
+    // 每条规则需同时匹配 family 与某个 version 关键词
+    for (const rule of NORMALIZE_MODEL_RULES) {
+      if (!normalized.includes(rule.family)) continue;
+      // 仅 family 兜底规则（无 versions）
+      if (rule.versions.length === 0) {
+        return rule.id;
+      }
+      for (const v of rule.versions) {
+        if (normalized.includes(v)) {
+          return rule.id;
+        }
+      }
     }
 
     // Unknown model - return original

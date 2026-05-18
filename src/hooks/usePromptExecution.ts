@@ -23,6 +23,12 @@ import { CodexEventConverter, extractCodexRateLimitsFromEvent } from '@/lib/code
 import type { CodexExecutionMode, CodexRateLimits } from '@/types/codex';
 import { cacheModelFromInitMessage } from '@/lib/modelNameParser';
 
+/**
+ * 环形缓冲，避免长会话 OOM
+ * rawJsonlOutput 在长会话中会无限增长，超过该上限时丢弃最早的条目
+ */
+const MAX_RAW_JSONL_ENTRIES = 2000;
+
 // ============================================================================
 // Global Type Declarations
 // ============================================================================
@@ -403,7 +409,13 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
             const message = sessionCodexConverter.convertEvent(payload);
             if (message) {
               setMessages(prev => [...prev, message]);
-              setRawJsonlOutput((prev) => [...prev, payload]);
+              // 环形缓冲，避免长会话 OOM
+              setRawJsonlOutput((prev) => {
+                const next = prev.length >= MAX_RAW_JSONL_ENTRIES
+                  ? [...prev.slice(prev.length - MAX_RAW_JSONL_ENTRIES + 1), payload]
+                  : [...prev, payload];
+                return next;
+              });
 
               // Extract and save Codex thread_id from thread.started for session resuming
               // NOTE: claudeSessionId is already set to the backend channel ID in codex-session-init handler
@@ -877,7 +889,12 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
                   const message = convertGeminiToClaudeMessage(data);
                   return message ? [...prev, message] : prev;
                 });
-                setRawJsonlOutput((prev) => [...prev, payload]);
+                setRawJsonlOutput((prev) => {
+                  const next = prev.length >= MAX_RAW_JSONL_ENTRIES
+                    ? [...prev.slice(prev.length - MAX_RAW_JSONL_ENTRIES + 1), payload]
+                    : [...prev, payload];
+                  return next;
+                });
                 return;
               }
 
@@ -886,7 +903,12 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
 
               if (message) {
                 setMessages(prev => [...prev, message]);
-                setRawJsonlOutput((prev) => [...prev, payload]);
+                setRawJsonlOutput((prev) => {
+                  const next = prev.length >= MAX_RAW_JSONL_ENTRIES
+                    ? [...prev.slice(prev.length - MAX_RAW_JSONL_ENTRIES + 1), payload]
+                    : [...prev, payload];
+                  return next;
+                });
 
                 // 🔧 NOTE: Session ID handling moved to gemini-cli-session-id event listener
                 // The init message from gemini-output may contain backend's temporary ID (gemini-{uuid})
@@ -1201,8 +1223,13 @@ export function usePromptExecution(config: UsePromptExecutionConfig): UsePromptE
             }
             processedClaudeMessages.add(messageId);
 
-            // Store raw JSONL
-            setRawJsonlOutput((prev) => [...prev, payload]);
+            // Store raw JSONL（环形缓冲，避免长会话 OOM）
+            setRawJsonlOutput((prev) => {
+              const next = prev.length >= MAX_RAW_JSONL_ENTRIES
+                ? [...prev.slice(prev.length - MAX_RAW_JSONL_ENTRIES + 1), payload]
+                : [...prev, payload];
+              return next;
+            });
 
             const message = JSON.parse(payload) as ClaudeStreamMessage;
 

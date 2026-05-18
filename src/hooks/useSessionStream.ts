@@ -31,6 +31,12 @@ import {
 } from '@/lib/modelNameParser';
 
 /**
+ * 环形缓冲，避免长会话 OOM
+ * rawJsonlOutput 在长会话中会无限增长，超过该上限时丢弃最早的条目
+ */
+const MAX_RAW_JSONL_ENTRIES = 2000;
+
+/**
  * Hook 配置
  * 与 useSessionLifecycle 完全兼容
  */
@@ -163,8 +169,13 @@ export function useSessionStream(config: UseSessionStreamConfig): UseSessionStre
   ) => {
     if (!isMountedRef.current) return;
 
-    // 存储原始 JSONL
-    setRawJsonlOutput(prev => [...prev, rawPayload]);
+    // 存储原始 JSONL（环形缓冲，避免长会话 OOM）
+    setRawJsonlOutput(prev => {
+      const next = prev.length >= MAX_RAW_JSONL_ENTRIES
+        ? [...prev.slice(prev.length - MAX_RAW_JSONL_ENTRIES + 1), rawPayload]
+        : [...prev, rawPayload];
+      return next;
+    });
 
     // 通过翻译中间件处理
     await processMessageWithTranslation(message, rawPayload);
