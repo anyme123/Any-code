@@ -760,9 +760,18 @@ async fn spawn_claude_process(
 
             // 使用 spawn 异步写入 stdin，避免阻塞主流程
             tokio::spawn(async move {
-                if let Err(e) = stdin.write_all(prompt_for_stdin.as_bytes()).await {
-                    log::error!("Failed to write prompt to stdin: {}", e);
-                    return;
+                match stdin.write_all(prompt_for_stdin.as_bytes()).await {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
+                        log::warn!(
+                            "stdin BrokenPipe: child process exited before prompt was fully written"
+                        );
+                        return;
+                    }
+                    Err(e) => {
+                        log::error!("Failed to write prompt to stdin: {}", e);
+                        return;
+                    }
                 }
                 // 关闭 stdin 表示输入完成
                 if let Err(e) = stdin.shutdown().await {

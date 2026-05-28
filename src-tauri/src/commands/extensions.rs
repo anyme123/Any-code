@@ -145,6 +145,7 @@ fn scan_agents_directory(dir: &Path, scope: &str) -> Result<Vec<SubagentFile>, S
 
     for entry in WalkDir::new(dir)
         .max_depth(2) // Limit depth
+        .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
     {
@@ -216,6 +217,7 @@ fn scan_skills_directory(dir: &Path, scope: &str) -> Result<Vec<AgentSkillFile>,
 
     for entry in WalkDir::new(dir)
         .max_depth(2)
+        .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
     {
@@ -575,6 +577,7 @@ fn count_plugin_components(plugin_dir: &Path) -> PluginComponents {
     if skills_dir.exists() {
         for entry in WalkDir::new(&skills_dir)
             .max_depth(3) // skills/<skill-name>/SKILL.md
+            .follow_links(true)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| {
