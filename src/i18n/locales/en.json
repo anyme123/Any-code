@@ -589,6 +589,8 @@
     "promptSuggestionDescription": "Auto-generate input suggestions based on conversation context, press Tab to accept",
     "disableRewindGitOps": "Disable Git Operations in Rewind",
     "disableRewindGitOpsDescription": "When enabled, rewind can only delete conversation history, cannot rollback code changes (suitable for collaboration or production)",
+    "disableAutoCommitAfterResponse": "Disable auto git commit after response",
+    "disableAutoCommitAfterResponseDescription": "Keep rewind history, but stop auto-committing working tree changes after each AI response.",
     "chatRetentionDays": "Chat Retention Days",
     "chatRetentionDaysDescription": "How long to keep local chat history (default: 30 days)",
     "customClaudePath": "Custom Claude CLI Path",

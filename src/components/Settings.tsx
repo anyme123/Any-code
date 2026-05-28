@@ -103,6 +103,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const [executionConfig, setExecutionConfig] = useState<ClaudeExecutionConfig | null>(null);
   const [disableRewindGitOps, setDisableRewindGitOps] = useState(false);
   const [showRewindGitConfirmDialog, setShowRewindGitConfirmDialog] = useState(false);
+  const [disableAutoCommitAfterResponse, setDisableAutoCommitAfterResponse] = useState(false);
   
   // Hooks state
   const [userHooksChanged, setUserHooksChanged] = useState(false);
@@ -140,6 +141,7 @@ export const Settings: React.FC<SettingsProps> = ({
         const execConfig = await api.getClaudeExecutionConfig();
         setExecutionConfig(execConfig);
         setDisableRewindGitOps(execConfig.disable_rewind_git_operations || false);
+        setDisableAutoCommitAfterResponse(execConfig.disable_auto_commit_after_response || false);
       } catch (err) {
         console.error("Failed to load execution config:", err);
         // Continue with default values
@@ -232,6 +234,7 @@ export const Settings: React.FC<SettingsProps> = ({
         const updatedExecConfig = {
           ...executionConfig,
           disable_rewind_git_operations: disableRewindGitOps,
+          disable_auto_commit_after_response: disableAutoCommitAfterResponse,
         };
         await api.updateClaudeExecutionConfig(updatedExecConfig);
         setExecutionConfig(updatedExecConfig);
@@ -453,6 +456,8 @@ export const Settings: React.FC<SettingsProps> = ({
                 updateSetting={updateSetting}
                 disableRewindGitOps={disableRewindGitOps}
                 handleRewindGitOpsToggle={handleRewindGitOpsToggle}
+                disableAutoCommitAfterResponse={disableAutoCommitAfterResponse}
+                onAutoCommitAfterResponseChange={setDisableAutoCommitAfterResponse}
                 setToast={setToast}
               />
             </TabsContent>

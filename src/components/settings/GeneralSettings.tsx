@@ -17,6 +17,8 @@ interface GeneralSettingsProps {
   updateSetting: (key: string, value: any) => void;
   disableRewindGitOps: boolean;
   handleRewindGitOpsToggle: (checked: boolean) => void;
+  disableAutoCommitAfterResponse: boolean;
+  onAutoCommitAfterResponseChange: (checked: boolean) => void;
   setToast: (toast: { message: string; type: 'success' | 'error' } | null) => void;
 }
 
@@ -25,6 +27,8 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({
   updateSetting,
   disableRewindGitOps,
   handleRewindGitOpsToggle,
+  disableAutoCommitAfterResponse,
+  onAutoCommitAfterResponseChange,
   setToast
 }) => {
   const { t } = useTranslation();
@@ -374,6 +378,23 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({
               id="disableRewindGitOps"
               checked={disableRewindGitOps}
               onCheckedChange={handleRewindGitOpsToggle}
+            />
+          </div>
+
+          {/* Disable Auto Commit After Response (#181 #175 #186) */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="disableAutoCommitAfterResponse">
+                {t('generalSettings.disableAutoCommitAfterResponse')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('generalSettings.disableAutoCommitAfterResponseDescription')}
+              </p>
+            </div>
+            <Switch
+              id="disableAutoCommitAfterResponse"
+              checked={disableAutoCommitAfterResponse}
+              onCheckedChange={onAutoCommitAfterResponseChange}
             />
           </div>
 

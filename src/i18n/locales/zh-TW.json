@@ -589,6 +589,8 @@
     "promptSuggestionDescription": "基於對話上下文自動產生輸入建議，按 Tab 接受",
     "disableRewindGitOps": "停用撤回中的 Git 操作",
     "disableRewindGitOpsDescription": "啟用後，撤回功能只能刪除對話歷史，無法回滾程式碼變更（適用於多人協作或生產環境）",
+    "disableAutoCommitAfterResponse": "關閉對話結束後自動 git commit",
+    "disableAutoCommitAfterResponseDescription": "保留 rewind 歷史的同時，停止在每次 AI 回覆後自動提交工作樹變更。",
     "chatRetentionDays": "聊天記錄保留天數",
     "chatRetentionDaysDescription": "本機保留聊天記錄的時長（預設：30天）",
     "customClaudePath": "自訂 Claude CLI 路徑",

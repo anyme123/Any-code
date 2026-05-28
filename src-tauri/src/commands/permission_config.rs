@@ -70,6 +70,11 @@ pub struct ClaudeExecutionConfig {
     pub permissions: ClaudePermissionConfig,
     #[serde(default)]
     pub disable_rewind_git_operations: bool,
+    /// 控制每次 AI 回复后是否自动 git commit。
+    /// Issue #181/#175: 与 disable_rewind_git_operations 解耦，
+    /// 让用户既保留 rewind 历史，又能关掉自动提交。
+    #[serde(default)]
+    pub disable_auto_commit_after_response: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +94,7 @@ impl Default for ClaudeExecutionConfig {
             verbose: true,
             permissions: ClaudePermissionConfig::default(),
             disable_rewind_git_operations: false,
+            disable_auto_commit_after_response: false,
         }
     }
 }

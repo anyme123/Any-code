@@ -147,6 +147,7 @@ export interface ClaudeExecutionConfig {
   verbose: boolean;
   permissions: ClaudePermissionConfig;
   disable_rewind_git_operations: boolean;
+  disable_auto_commit_after_response?: boolean;
 }
 
 /**
