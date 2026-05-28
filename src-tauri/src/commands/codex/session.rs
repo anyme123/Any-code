@@ -30,14 +30,16 @@ use super::config::get_codex_sessions_dir;
 // ============================================================================
 
 /// Codex execution mode
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum CodexExecutionMode {
-    /// Read-only mode (default, safe)
+    /// Read-only mode (safe, no writes)
     ReadOnly,
-    /// Allow file edits
+    /// Default sandbox: prompt user before sensitive operations
+    Default,
+    /// Allow file edits without prompts (workspace-write)
     FullAuto,
-    /// Full access including network
+    /// Full access including network (danger)
     DangerFullAccess,
 }
 
@@ -97,6 +99,16 @@ pub struct CodexExecutionOptions {
 
 fn default_json_mode() -> bool {
     true
+}
+
+/// 把 mode 转成 Codex CLI 的 -c sandbox_mode=… 值；Default 不需要覆盖
+fn codex_sandbox_mode_override(mode: &CodexExecutionMode) -> Option<&'static str> {
+    match mode {
+        CodexExecutionMode::ReadOnly => Some("read-only"),
+        CodexExecutionMode::FullAuto => Some("workspace-write"),
+        CodexExecutionMode::DangerFullAccess => Some("danger-full-access"),
+        CodexExecutionMode::Default => None,
+    }
 }
 
 /// Codex session metadata
@@ -673,21 +685,34 @@ fn build_codex_command(
     }
 
     if is_resume {
-        // Add 'resume' after --json
+        // 通过 -c 配置覆盖在 'resume' 子命令前注入 sandbox_mode/model
+        // 修复 #174: resume 之前不会传 mode/model，导致用户选择被忽略、强制只读
+        if let Some(sandbox_mode) = codex_sandbox_mode_override(&options.mode) {
+            cmd.arg("-c");
+            cmd.arg(format!("sandbox_mode={}", sandbox_mode));
+        }
+
+        if let Some(ref model) = options.model {
+            cmd.arg("-c");
+            cmd.arg(format!(
+                "model={}",
+                model.strip_suffix("-fast").unwrap_or(model)
+            ));
+        }
+
         cmd.arg("resume");
 
-        // Add session_id
         if let Some(sid) = session_id {
             cmd.arg(sid);
         }
-
-        // Resume mode: other options are NOT supported
-        // The session retains its original mode/model configuration
     } else {
         // For new sessions: add other options
         // (--json already added above)
 
         match options.mode {
+            CodexExecutionMode::Default => {
+                // Codex 默认沙箱：交由 CLI 自身决定，不显式传 --sandbox
+            }
             CodexExecutionMode::FullAuto => {
                 cmd.arg("--full-auto");
             }
@@ -696,7 +721,8 @@ fn build_codex_command(
                 cmd.arg("danger-full-access");
             }
             CodexExecutionMode::ReadOnly => {
-                // Read-only is default
+                cmd.arg("--sandbox");
+                cmd.arg("read-only");
             }
         }
 
@@ -778,12 +804,26 @@ fn build_wsl_codex_command(
     }
 
     if is_resume {
+        if let Some(sandbox_mode) = codex_sandbox_mode_override(&options.mode) {
+            args.push("-c".to_string());
+            args.push(format!("sandbox_mode={}", sandbox_mode));
+        }
+        if let Some(ref model) = options.model {
+            args.push("-c".to_string());
+            args.push(format!(
+                "model={}",
+                model.strip_suffix("-fast").unwrap_or(model)
+            ));
+        }
         args.push("resume".to_string());
         if let Some(sid) = session_id {
             args.push(sid.to_string());
         }
     } else {
         match options.mode {
+            CodexExecutionMode::Default => {
+                // Codex 默认沙箱
+            }
             CodexExecutionMode::FullAuto => {
                 args.push("--full-auto".to_string());
             }
@@ -791,7 +831,10 @@ fn build_wsl_codex_command(
                 args.push("--sandbox".to_string());
                 args.push("danger-full-access".to_string());
             }
-            CodexExecutionMode::ReadOnly => {}
+            CodexExecutionMode::ReadOnly => {
+                args.push("--sandbox".to_string());
+                args.push("read-only".to_string());
+            }
         }
 
         if let Some(ref model) = options.model {
