@@ -35,8 +35,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          model: "claude-opus-4-20250514"
+          # Optional: Specify model (defaults to Claude Sonnet 4.6, this project uses Claude Opus 4.7)
+          model: "claude-opus-4-7"
           
           # Optional: Customize the trigger phrase (default: @claude)
           # trigger_phrase: "/claude"
