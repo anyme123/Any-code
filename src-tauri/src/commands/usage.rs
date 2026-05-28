@@ -4,6 +4,7 @@
 use chrono::{DateTime, Local, NaiveDate};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
@@ -594,13 +595,13 @@ pub fn get_usage_stats(days: Option<u32>) -> Result<UsageStats, String> {
 
     // Convert hashmaps to sorted vectors
     let mut by_model: Vec<ModelUsage> = model_stats.into_values().collect();
-    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(Ordering::Equal));
 
     let mut by_date: Vec<DailyUsage> = daily_stats.into_values().collect();
     by_date.sort_by(|a, b| a.date.cmp(&b.date));
 
     let mut by_project: Vec<ProjectUsage> = project_stats.into_values().collect();
-    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(Ordering::Equal));
 
     Ok(UsageStats {
         total_cost,
@@ -766,13 +767,13 @@ pub fn get_usage_by_date_range(start_date: String, end_date: String) -> Result<U
     let unique_sessions: HashSet<_> = filtered_entries.iter().map(|e| &e.session_id).collect();
 
     let mut by_model: Vec<ModelUsage> = model_stats.into_values().collect();
-    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_model.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(Ordering::Equal));
 
     let mut by_date: Vec<DailyUsage> = daily_stats.into_values().collect();
     by_date.sort_by(|a, b| a.date.cmp(&b.date));
 
     let mut by_project: Vec<ProjectUsage> = project_stats.into_values().collect();
-    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+    by_project.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(Ordering::Equal));
 
     Ok(UsageStats {
         total_cost,
@@ -859,9 +860,9 @@ pub fn get_session_stats(
     // Sort by order
     let order_str = order.unwrap_or_else(|| "desc".to_string());
     if order_str == "asc" {
-        by_session.sort_by(|a, b| a.total_cost.partial_cmp(&b.total_cost).unwrap());
+        by_session.sort_by(|a, b| a.total_cost.partial_cmp(&b.total_cost).unwrap_or(Ordering::Equal));
     } else {
-        by_session.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap());
+        by_session.sort_by(|a, b| b.total_cost.partial_cmp(&a.total_cost).unwrap_or(Ordering::Equal));
     }
 
     Ok(by_session)
