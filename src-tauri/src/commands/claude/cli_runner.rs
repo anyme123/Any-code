@@ -751,6 +751,112 @@ fn contains_at_reference(prompt: &str) -> bool {
     })
 }
 
+/// 判断路径是否为受支持的图片扩展名。
+fn is_image_extension(path: &str) -> bool {
+    matches!(
+        path.rsplit('.').next().map(|e| e.to_ascii_lowercase()).as_deref(),
+        Some("png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp" | "ico" | "svg")
+    )
+}
+
+/// 根据图片扩展名推断 Anthropic API 接受的 media_type。
+fn image_media_type(path: &str) -> &'static str {
+    match path.rsplit('.').next().map(|e| e.to_ascii_lowercase()).as_deref() {
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
+        // png 及其它（bmp/ico/svg 等少见格式）统一回退到 png
+        _ => "image/png",
+    }
+}
+
+/// 从 prompt 文本中提取 @图片引用的文件路径（去重、保序）。
+/// 复用前端 MessageImagePreview 的约定：@"含空格路径" 与 @无空格路径 两种形态，
+/// 仅保留图片扩展名，跳过 data: 内联 URL（base64 注入只处理真实文件）。
+fn extract_image_paths(prompt: &str) -> Vec<String> {
+    let mut paths: Vec<String> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+
+    let mut push = |p: &str| {
+        if p.starts_with("data:") {
+            return;
+        }
+        if is_image_extension(p) && seen.insert(p.to_string()) {
+            paths.push(p.to_string());
+        }
+    };
+
+    // 模式1：@"路径"（含空格，引号包裹）。
+    let bytes = prompt.as_bytes();
+    let mut i = 0;
+    while i + 1 < bytes.len() {
+        if bytes[i] == b'@' && bytes[i + 1] == b'"' {
+            if let Some(end_rel) = prompt[i + 2..].find('"') {
+                let start = i + 2;
+                let end = start + end_rel;
+                push(&prompt[start..end]);
+                i = end + 1;
+                continue;
+            }
+        }
+        i += 1;
+    }
+
+    // 模式2：@路径（无空格，到空白或引号止）。
+    // 与模式1重复的路径会被 seen 去重，引号形态在此跳过。
+    for tok in prompt.split_whitespace() {
+        let t = tok.trim_start_matches(|c| c == '(' || c == '[' || c == '\'');
+        if let Some(rest) = t.strip_prefix('@') {
+            if rest.starts_with('"') {
+                continue; // 引号形态已由模式1处理
+            }
+            let rest = rest.trim_end_matches(|c| c == ')' || c == ']' || c == ',');
+            push(rest);
+        }
+    }
+
+    paths
+}
+
+/// 构造一行 stream-json（NDJSON）user 消息，把图片作为 base64 视觉块直接注入。
+/// 这样 Claude 无需调用 Read 工具即可"看到"图片（绕开 Read 读较大图失效的问题，issue #18588）。
+/// 读盘失败的图片会被跳过并记录 warn，不阻断整条消息。
+fn build_stream_json_message(prompt: &str, image_paths: &[String]) -> String {
+    use base64::{engine::general_purpose, Engine};
+
+    let mut content: Vec<serde_json::Value> = Vec::new();
+    // 文本块保留原始 prompt（含 @路径文字无妨，模型已能看到真图）
+    content.push(serde_json::json!({ "type": "text", "text": prompt }));
+
+    for path in image_paths {
+        match std::fs::read(path) {
+            Ok(bytes) => {
+                let b64 = general_purpose::STANDARD.encode(&bytes);
+                content.push(serde_json::json!({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image_media_type(path),
+                        "data": b64,
+                    }
+                }));
+                log::info!("Injected image as base64 block: {} ({} bytes)", path, bytes.len());
+            }
+            Err(e) => {
+                log::warn!("Failed to read image '{}', skipping: {}", path, e);
+            }
+        }
+    }
+
+    let msg = serde_json::json!({
+        "type": "user",
+        "message": { "role": "user", "content": content }
+    });
+
+    // NDJSON：单行 JSON + 换行
+    format!("{}\n", msg)
+}
+
 /// Helper function to spawn Claude process and handle streaming
 /// 🔥 修复：斜杠命令通过 -p 参数传递（触发命令解析），普通 prompt 通过 stdin 管道传递
 /// 这样既支持斜杠命令，又避免操作系统命令行长度限制（Windows ~8KB, Linux/macOS ~128KB-2MB）
@@ -769,49 +875,74 @@ async fn spawn_claude_process(
     // 🔥 关键修复：检测斜杠命令，通过 -p 参数传递以触发命令解析
     // Claude CLI 只在 -p 参数中解析斜杠命令，stdin 管道不会触发
     let is_slash = is_slash_command(&prompt);
-    // 含 @文件/图片引用的 prompt 需要 print 模式才能展开（实测：无 -p 时 @图片不被解析为视觉块）
-    let has_at_ref = !is_slash && contains_at_reference(&prompt);
+
+    // 提取 prompt 中的 @图片路径。含图片时改走 stream-json 输入，把图片作为 base64 视觉块
+    // 直接注入（绕开 Read 工具——实测 Read 读较大图片后模型收不到有效图像，issue #18588）。
+    let image_paths: Vec<String> = if is_slash {
+        Vec::new()
+    } else {
+        extract_image_paths(&prompt)
+    };
+    let has_images = !image_paths.is_empty();
+
+    // 含非图片 @文件引用（如文本文件）仍走 -p + Read（文本文件无 #18588 问题）
+    let has_at_ref = !is_slash && !has_images && contains_at_reference(&prompt);
+
+    // 写入 stdin 的载荷：
+    // - 含图片：一行 stream-json NDJSON user 消息（text + image base64 块）
+    // - 其它非斜杠：原始 prompt 文本
+    let stdin_payload: Option<String> = if is_slash {
+        None
+    } else if has_images {
+        Some(build_stream_json_message(&prompt, &image_paths))
+    } else {
+        Some(prompt.clone())
+    };
 
     if is_slash {
         // 斜杠命令：prompt 作为 -p 的参数传入以触发命令解析
         log::info!("Detected slash command, using -p flag: {}", prompt.trim());
         cmd.arg("-p");
         cmd.arg(&prompt);
+    } else if has_images {
+        // 含图片：print 模式 + stream-json 输入，stdin 注入 base64 图像块
+        log::info!(
+            "Detected {} image(s) in prompt, using stream-json input to inject image blocks",
+            image_paths.len()
+        );
+        cmd.arg("-p");
+        cmd.arg("--input-format");
+        cmd.arg("stream-json");
     } else if has_at_ref {
-        // 含 @引用：仅加 -p 标志触发 @展开，prompt 仍走 stdin（避免命令行长度限制）
-        log::info!("Detected @file/image reference, enabling print mode (-p) for @expansion");
+        // 含非图片 @引用：仅加 -p 标志触发 @展开，prompt 仍走 stdin
+        log::info!("Detected @file reference, enabling print mode (-p) for @expansion");
         cmd.arg("-p");
     }
-
-    // 是否仍需通过 stdin 写入 prompt：斜杠命令已用 -p 参数带入，无需 stdin
-    let write_stdin = !is_slash;
 
     // Spawn the process
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn Claude: {}", e))?;
 
-    // 🔥 prompt 通过 stdin 管道传递，避免命令行长度限制
-    // 斜杠命令已通过 -p 参数传递，不需要 stdin；含 @引用的 prompt 加了 -p 标志但 prompt 仍走 stdin
-    if write_stdin {
+    // 🔥 通过 stdin 管道写入载荷，避免命令行长度限制
+    // 斜杠命令已通过 -p 参数传递 prompt（stdin_payload 为 None），只需关闭 stdin
+    if let Some(payload) = stdin_payload {
         if let Some(mut stdin) = child.stdin.take() {
-            // 克隆 prompt 以便在 async 块中使用（避免生命周期问题）
-            let prompt_for_stdin = prompt.clone();
-            let prompt_len = prompt_for_stdin.len();
-            log::info!("Writing prompt to stdin ({} bytes)", prompt_len);
+            let prompt_len = payload.len();
+            log::info!("Writing payload to stdin ({} bytes)", prompt_len);
 
             // 使用 spawn 异步写入 stdin，避免阻塞主流程
             tokio::spawn(async move {
-                match stdin.write_all(prompt_for_stdin.as_bytes()).await {
+                match stdin.write_all(payload.as_bytes()).await {
                     Ok(()) => {}
                     Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => {
                         log::warn!(
-                            "stdin BrokenPipe: child process exited before prompt was fully written"
+                            "stdin BrokenPipe: child process exited before payload was fully written"
                         );
                         return;
                     }
                     Err(e) => {
-                        log::error!("Failed to write prompt to stdin: {}", e);
+                        log::error!("Failed to write payload to stdin: {}", e);
                         return;
                     }
                 }
@@ -819,10 +950,10 @@ async fn spawn_claude_process(
                 if let Err(e) = stdin.shutdown().await {
                     log::warn!("Failed to shutdown stdin: {}", e);
                 }
-                log::info!("Successfully wrote prompt to stdin and closed");
+                log::info!("Successfully wrote payload to stdin and closed");
             });
         } else {
-            log::warn!("Failed to get stdin handle, prompt may not be sent");
+            log::warn!("Failed to get stdin handle, payload may not be sent");
         }
     } else {
         // 斜杠命令模式：关闭 stdin 以信号结束
@@ -1179,7 +1310,7 @@ async fn spawn_claude_process(
 
 #[cfg(test)]
 mod tests {
-    use super::{contains_at_reference, is_slash_command};
+    use super::{contains_at_reference, extract_image_paths, is_slash_command};
 
     #[test]
     fn slash_command_detected() {
@@ -1215,5 +1346,51 @@ mod tests {
         assert!(!contains_at_reference("价格 @ 100 元"));
         // npm scope 作为普通文字（无路径分隔符、无文件扩展名）
         assert!(!contains_at_reference("安装 @types 这个包"));
+    }
+
+    #[test]
+    fn extract_image_paths_unquoted() {
+        let p = "描述这张图 @C:/Users/x/Temp/clipboard_image_1.png";
+        assert_eq!(
+            extract_image_paths(p),
+            vec!["C:/Users/x/Temp/clipboard_image_1.png".to_string()]
+        );
+    }
+
+    #[test]
+    fn extract_image_paths_quoted_with_spaces() {
+        let p = "看 @\"C:/My Pictures/a b.png\" 这张";
+        assert_eq!(
+            extract_image_paths(p),
+            vec!["C:/My Pictures/a b.png".to_string()]
+        );
+    }
+
+    #[test]
+    fn extract_image_paths_backslash() {
+        let p = "@C:\\Users\\x\\shot.jpeg";
+        assert_eq!(
+            extract_image_paths(p),
+            vec!["C:\\Users\\x\\shot.jpeg".to_string()]
+        );
+    }
+
+    #[test]
+    fn extract_image_paths_multiple_and_dedup() {
+        let p = "@a/1.png 和 @a/2.gif 再看 @a/1.png";
+        assert_eq!(
+            extract_image_paths(p),
+            vec!["a/1.png".to_string(), "a/2.gif".to_string()]
+        );
+    }
+
+    #[test]
+    fn extract_image_paths_skips_non_images_and_data_url() {
+        // 非图片文件不纳入
+        assert!(extract_image_paths("@notes/readme.md 看看").is_empty());
+        // data: 内联 URL 跳过
+        assert!(extract_image_paths("@\"data:image/png;base64,AAAA\"").is_empty());
+        // 纯文字无图片
+        assert!(extract_image_paths("你好，帮我写函数").is_empty());
     }
 }
