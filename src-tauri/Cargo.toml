@@ -1,6 +1,6 @@
 [package]
 name = "any-code"
-version = "5.29.0"
+version = "5.29.1"
 description = "Any Code - Professional desktop application and toolkit for AI CLI"
 authors = ["mufeedvh", "123vviekr"]
 license = "AGPL-3.0"
