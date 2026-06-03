@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { FloatingPromptInputProps, FloatingPromptInputRef, ThinkingMode, ThinkingEffort, ModelType, ModelConfig } from "./types";
 import { getModels } from "./constants";
 import { MODEL_NAMES_UPDATED_EVENT } from "@/lib/modelNameParser";
+import { toClaudeImageMention } from "@/lib/imagePath";
 import { useImageHandling } from "./hooks/useImageHandling";
 import { useFileSelection } from "./hooks/useFileSelection";
 import { usePromptEnhancement } from "./hooks/usePromptEnhancement";
@@ -527,8 +528,8 @@ const FloatingPromptInputInner = (
             // For Codex: use direct path without @ prefix
             return attachment.filePath.includes(' ') ? `"${attachment.filePath}"` : attachment.filePath;
           } else {
-            // For Claude Code: use @ prefix for file reference
-            return attachment.filePath.includes(' ') ? `@"${attachment.filePath}"` : `@${attachment.filePath}`;
+            // For Claude Code: 规范化分隔符并构造 @引用，避免反斜杠被 CLI 当转义吞掉
+            return toClaudeImageMention(attachment.filePath);
           }
         }).join(' ');
 

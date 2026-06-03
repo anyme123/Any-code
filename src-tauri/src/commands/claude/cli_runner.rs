@@ -720,6 +720,37 @@ fn is_slash_command(prompt: &str) -> bool {
     trimmed.starts_with('/') && !trimmed.contains('\n') && trimmed.len() < 256
 }
 
+/// 检测 prompt 是否包含 @文件/路径引用（图片或文件）。
+/// Claude CLI 的 @引用展开（把文件读入上下文、把图片作为视觉块注入）只在 print 模式（-p）下生效；
+/// 经 stdin 管道但不带 -p 时，@提及不会被展开，模型只看到一段字面路径文本（实测 NO_IMAGE）。
+/// 因此含 @引用的 prompt 必须加 -p 标志才能让图片/文件被真正解析。
+///
+/// 为避免把邮箱（user@host）、npm scope（@types/node 作为普通文字）等误判为路径引用，
+/// 仅当 token 以 @ 开头、且其后内容看起来像文件路径（含 / 或 \，或带常见文件扩展名）时才命中。
+fn contains_at_reference(prompt: &str) -> bool {
+    prompt.split_whitespace().any(|tok| {
+        // 去掉前导括号/引号，识别 @ 开头的 token
+        let t = tok.trim_start_matches(|c| c == '(' || c == '[' || c == '"' || c == '\'');
+        let Some(rest) = t.strip_prefix('@') else {
+            return false;
+        };
+        if rest.is_empty() {
+            return false;
+        }
+        // 去掉尾部引号/标点后判断是否像路径
+        let rest = rest.trim_end_matches(|c| c == '"' || c == '\'' || c == ')' || c == ']');
+        rest.contains('/')
+            || rest.contains('\\')
+            || matches!(
+                rest.rsplit('.').next().map(|e| e.to_ascii_lowercase()).as_deref(),
+                Some(
+                    "png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp" | "ico" | "svg"
+                        | "pdf" | "txt" | "md" | "json" | "csv" | "log"
+                )
+            )
+    })
+}
+
 /// Helper function to spawn Claude process and handle streaming
 /// 🔥 修复：斜杠命令通过 -p 参数传递（触发命令解析），普通 prompt 通过 stdin 管道传递
 /// 这样既支持斜杠命令，又避免操作系统命令行长度限制（Windows ~8KB, Linux/macOS ~128KB-2MB）
@@ -737,21 +768,32 @@ async fn spawn_claude_process(
 
     // 🔥 关键修复：检测斜杠命令，通过 -p 参数传递以触发命令解析
     // Claude CLI 只在 -p 参数中解析斜杠命令，stdin 管道不会触发
-    let use_p_flag = is_slash_command(&prompt);
-    if use_p_flag {
+    let is_slash = is_slash_command(&prompt);
+    // 含 @文件/图片引用的 prompt 需要 print 模式才能展开（实测：无 -p 时 @图片不被解析为视觉块）
+    let has_at_ref = !is_slash && contains_at_reference(&prompt);
+
+    if is_slash {
+        // 斜杠命令：prompt 作为 -p 的参数传入以触发命令解析
         log::info!("Detected slash command, using -p flag: {}", prompt.trim());
         cmd.arg("-p");
         cmd.arg(&prompt);
+    } else if has_at_ref {
+        // 含 @引用：仅加 -p 标志触发 @展开，prompt 仍走 stdin（避免命令行长度限制）
+        log::info!("Detected @file/image reference, enabling print mode (-p) for @expansion");
+        cmd.arg("-p");
     }
+
+    // 是否仍需通过 stdin 写入 prompt：斜杠命令已用 -p 参数带入，无需 stdin
+    let write_stdin = !is_slash;
 
     // Spawn the process
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to spawn Claude: {}", e))?;
 
-    // 🔥 普通 prompt 通过 stdin 管道传递，避免命令行长度限制
-    // 斜杠命令已通过 -p 参数传递，不需要 stdin
-    if !use_p_flag {
+    // 🔥 prompt 通过 stdin 管道传递，避免命令行长度限制
+    // 斜杠命令已通过 -p 参数传递，不需要 stdin；含 @引用的 prompt 加了 -p 标志但 prompt 仍走 stdin
+    if write_stdin {
         if let Some(mut stdin) = child.stdin.take() {
             // 克隆 prompt 以便在 async 块中使用（避免生命周期问题）
             let prompt_for_stdin = prompt.clone();
@@ -1133,4 +1175,45 @@ async fn spawn_claude_process(
     });
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{contains_at_reference, is_slash_command};
+
+    #[test]
+    fn slash_command_detected() {
+        assert!(is_slash_command("/help"));
+        assert!(is_slash_command("  /compact  "));
+        assert!(!is_slash_command("hello"));
+        assert!(!is_slash_command("/multi\nline"));
+    }
+
+    #[test]
+    fn at_reference_detects_image_paths() {
+        // 正斜杠绝对路径（修复后剪贴板图片的形态）
+        assert!(contains_at_reference(
+            "描述这张图 @C:/Users/x/Temp/clipboard_image_1.png"
+        ));
+        // 反斜杠路径
+        assert!(contains_at_reference("看 @C:\\Users\\x\\img.jpg"));
+        // 引号包裹的含空格路径
+        assert!(contains_at_reference("@\"C:/My Pictures/a b.png\""));
+        // 相对路径
+        assert!(contains_at_reference("@assets/logo.svg 是什么"));
+        // 无扩展名但含分隔符的路径
+        assert!(contains_at_reference("@src/main 看这里"));
+    }
+
+    #[test]
+    fn at_reference_ignores_non_paths() {
+        // 纯文字不应触发 -p
+        assert!(!contains_at_reference("你好吗，帮我写个函数"));
+        // 邮箱不应误判为路径引用
+        assert!(!contains_at_reference("联系 user@example.com 获取帮助"));
+        // 单独的 @ 符号
+        assert!(!contains_at_reference("价格 @ 100 元"));
+        // npm scope 作为普通文字（无路径分隔符、无文件扩展名）
+        assert!(!contains_at_reference("安装 @types 这个包"));
+    }
 }

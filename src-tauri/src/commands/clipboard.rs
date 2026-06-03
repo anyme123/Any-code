@@ -112,6 +112,13 @@ pub async fn save_clipboard_image(
         path_str = path_str[4..].to_string();
     }
 
+    // 🔥 关键修复：将反斜杠统一替换为正斜杠
+    // Claude Code CLI 的 @文件引用解析器面向 Unix 实现，会把反斜杠当转义字符消费
+    // （如 @C:\Users\x\img.png 中的 \U \x 被吞掉，路径塌缩为 C:Usersximg.png 导致找不到文件）。
+    // 正斜杠在 @引用正则中是普通路径字符，Win32 与 Node 均接受，盘符保留，无转义风险。
+    // 参见 anthropics/claude-code issues #19338 / #6898。
+    path_str = path_str.replace('\\', "/");
+
     println!("Final cleaned path: {}", path_str);
 
     Ok(SavedImageResult {
