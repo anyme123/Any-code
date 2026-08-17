@@ -1245,7 +1245,7 @@ git push origin feature/your-feature-name
 
 如果这个项目对您有帮助，请给我们一个 **Star** ⭐！
 
-[![Star History Chart](https://api.star-history.com/svg?repos=anyme123/any-code&type=Date)](https://star-history.com/#anyme123/any-code&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=anyme123/any-code&type=Date)](https://star-history.dera.page/#anyme123/any-code&Date)
 
 ---
 
